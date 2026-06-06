@@ -1,0 +1,10 @@
+{
+  "id": "memos-companion",
+  "name": "Memos Companion",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Write and manage self-hosted Memos from an Obsidian sidebar.",
+  "author": "",
+  "authorUrl": "",
+  "isDesktopOnly": true
+}

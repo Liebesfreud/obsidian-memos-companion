@@ -1,0 +1,31 @@
+{
+  "name": "obsidian-memos-companion",
+  "version": "0.1.0",
+  "description": "Write and manage self-hosted Memos from an Obsidian sidebar.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "tsc --noEmit && vite build",
+    "check": "tsc --noEmit"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "memos"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Liebesfreud/obsidian-memos-companion.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^3.1.2",
+    "@types/node": "^22.15.30",
+    "obsidian": "^1.8.7",
+    "svelte": "^4.2.19",
+    "tslib": "^2.8.1",
+    "typescript": "^5.8.3",
+    "vite": "^5.4.19"
+  }
+}
