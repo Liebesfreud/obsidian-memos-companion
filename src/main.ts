@@ -1,5 +1,6 @@
 import { App, Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
 
+import { getLanguage, getMessages } from "./i18n";
 import { MemosClient } from "./memos-client";
 import { MemosSettingTab } from "./settings";
 import { DEFAULT_SETTINGS } from "./types";
@@ -15,16 +16,18 @@ interface AppWithSettings extends App {
 
 export default class ObWithMemosPlugin extends Plugin implements PanelHost {
   settings: ObWithMemosSettings = { ...DEFAULT_SETTINGS };
+  private readonly settingsListeners = new Set<() => void>();
 
   async onload(): Promise<void> {
     await this.loadSettings();
+    const messages = getMessages(this.settings.language);
 
     this.registerView(
       MEMOS_VIEW_TYPE,
       (leaf: WorkspaceLeaf) => new MemosView(leaf, this)
     );
 
-    this.addRibbonIcon("sticky-note", "Open Memos", () => {
+    this.addRibbonIcon("sticky-note", messages.commands.openMemos, () => {
       void this.activateView();
     });
 
@@ -33,7 +36,7 @@ export default class ObWithMemosPlugin extends Plugin implements PanelHost {
         void this.activateView();
       },
       id: "open-memos-sidebar",
-      name: "Open Memos sidebar"
+      name: messages.commands.openMemosSidebar
     });
 
     this.addSettingTab(new MemosSettingTab(this.app, this));
@@ -41,6 +44,7 @@ export default class ObWithMemosPlugin extends Plugin implements PanelHost {
 
   onunload(): void {
     this.app.workspace.detachLeavesOfType(MEMOS_VIEW_TYPE);
+    this.settingsListeners.clear();
   }
 
   async activateView(): Promise<void> {
@@ -63,11 +67,26 @@ export default class ObWithMemosPlugin extends Plugin implements PanelHost {
     return this.settings;
   }
 
+  notifySettingsChanged(): void {
+    for (const listener of this.settingsListeners) {
+      listener();
+    }
+  }
+
+  onSettingsChange(callback: () => void): () => void {
+    this.settingsListeners.add(callback);
+
+    return () => {
+      this.settingsListeners.delete(callback);
+    };
+  }
+
   async loadSettings(): Promise<void> {
     this.settings = {
       ...DEFAULT_SETTINGS,
       ...(await this.loadData())
     };
+    this.settings.language = getLanguage(this.settings.language);
   }
 
   openSettings(): void {
@@ -79,7 +98,7 @@ export default class ObWithMemosPlugin extends Plugin implements PanelHost {
       return;
     }
 
-    new Notice("Open plugin settings to configure Memos.");
+    new Notice(getMessages(this.settings.language).commands.openSettingsFallback);
   }
 
   async readVaultFile(path: string): Promise<UploadFile> {

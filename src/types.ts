@@ -1,21 +1,23 @@
+export type AppLanguage = "zh" | "en";
+
 export type MemoVisibility = "PRIVATE" | "PROTECTED" | "PUBLIC";
 
-export const VISIBILITY_OPTIONS: Record<MemoVisibility, string> = {
-  PRIVATE: "Private",
-  PROTECTED: "Protected",
-  PUBLIC: "Public"
-};
+export const DEFAULT_LANGUAGE: AppLanguage = "zh";
+
+export const VISIBILITY_VALUES: MemoVisibility[] = ["PRIVATE", "PROTECTED", "PUBLIC"];
 
 export interface ObWithMemosSettings {
   memosUrl: string;
   accessToken: string;
   defaultVisibility: MemoVisibility;
+  language: AppLanguage;
   pageSize: number;
 }
 
 export const DEFAULT_SETTINGS: ObWithMemosSettings = {
   accessToken: "",
   defaultVisibility: "PUBLIC",
+  language: DEFAULT_LANGUAGE,
   memosUrl: "",
   pageSize: 20
 };
@@ -105,6 +107,7 @@ export interface MemosApi {
 export interface PanelHost {
   getClient(): MemosApi;
   getSettings(): ObWithMemosSettings;
+  onSettingsChange(callback: () => void): () => void;
   openSettings(): void;
   readVaultFile(path: string): Promise<UploadFile>;
 }

@@ -2,11 +2,13 @@
   import { Notice, setIcon } from "obsidian";
   import { onMount } from "svelte";
 
-  import { VISIBILITY_OPTIONS } from "../types";
+  import { getMessages, getVisibilityOptions, localeForLanguage, uploadSourceLabel } from "../i18n";
+  import { VISIBILITY_VALUES } from "../types";
   import type {
     Memo,
     MemoResource,
     MemoVisibility,
+    ObWithMemosSettings,
     PanelHost,
     UploadFile,
     UploadFileSource
@@ -14,15 +16,10 @@
 
   export let host: PanelHost;
 
-  let currentSettings = host.getSettings();
-  let settingsVersion = 0;
-  $: isConfigured = Boolean(
-    currentSettings.memosUrl.trim() && currentSettings.accessToken.trim()
-  );
-  $: {
-    settingsVersion;
-    currentSettings = host.getSettings();
-  }
+  let currentSettings = readSettings();
+  $: messages = getMessages(currentSettings.language);
+  $: visibilityLabels = getVisibilityOptions(currentSettings.language);
+  $: isConfigured = hasConnection(currentSettings);
 
   let attachments: UploadFile[] = [];
   let busyMemoName: string | null = null;
@@ -58,9 +55,13 @@
   });
 
   onMount(() => {
-    if (isConfigured) {
+    if (hasConnection(currentSettings)) {
       void refresh();
     }
+
+    return host.onSettingsChange(() => {
+      reloadSettings(false);
+    });
   });
 
   function icon(node: HTMLElement, name: string): { update(nextName: string): void } {
@@ -73,14 +74,22 @@
     };
   }
 
+  function readSettings(): ObWithMemosSettings {
+    return { ...host.getSettings() };
+  }
+
+  function hasConnection(settings: ObWithMemosSettings): boolean {
+    return Boolean(settings.memosUrl.trim() && settings.accessToken.trim());
+  }
+
   async function refresh(): Promise<void> {
-    if (!isConfigured) {
+    if (!hasConnection(currentSettings)) {
       return;
     }
 
     loading = true;
     error = "";
-    status = "Loading memos";
+    status = messages.panel.loadingMemos;
 
     try {
       const client = host.getClient();
@@ -95,7 +104,7 @@
       memos = memoResult.memos;
       nextPageToken = memoResult.nextPageToken;
       remoteTags = tagResult;
-      status = `${memos.length} loaded`;
+      status = messages.panel.loaded(memos.length);
     } catch (caught) {
       error = getErrorMessage(caught);
       status = "";
@@ -121,7 +130,7 @@
 
       memos = [...memos, ...result.memos];
       nextPageToken = result.nextPageToken;
-      status = `${memos.length} loaded`;
+      status = messages.panel.loaded(memos.length);
     } catch (caught) {
       error = getErrorMessage(caught);
     } finally {
@@ -131,24 +140,24 @@
 
   async function publishMemo(): Promise<void> {
     if (!content.trim() && attachments.length === 0) {
-      error = "Add content or an attachment before publishing.";
+      error = messages.panel.addContentOrAttachment;
       return;
     }
 
     saving = true;
     error = "";
-    status = "Publishing";
+    status = messages.panel.publishing;
 
     try {
       const client = host.getClient();
       const resources: MemoResource[] = [];
 
       for (const attachment of attachments) {
-        status = `Uploading ${attachment.name}`;
+        status = messages.panel.uploading(attachment.name);
         resources.push(await client.uploadResource(attachment));
       }
 
-      status = "Creating memo";
+      status = messages.panel.creatingMemo;
 
       const memo = await client.createMemo({
         content: content.trim(),
@@ -159,8 +168,8 @@
       memos = [memo, ...memos];
       attachments = [];
       content = "";
-      status = "Published";
-      new Notice("Memo published.");
+      status = messages.panel.published;
+      new Notice(messages.panel.memoPublished);
     } catch (caught) {
       error = getErrorMessage(caught);
       status = "";
@@ -285,7 +294,7 @@
 
       replaceMemo(memo.name, updated);
       cancelEdit();
-      new Notice("Memo updated.");
+      new Notice(messages.panel.memoUpdated);
     } catch (caught) {
       error = getErrorMessage(caught);
     } finally {
@@ -294,7 +303,7 @@
   }
 
   async function deleteMemo(memo: Memo): Promise<void> {
-    if (!window.confirm("Delete this memo?")) {
+    if (!window.confirm(messages.panel.deleteConfirm)) {
       return;
     }
 
@@ -304,7 +313,7 @@
     try {
       await host.getClient().deleteMemo(memo.name);
       memos = memos.filter((current) => current.name !== memo.name);
-      new Notice("Memo deleted.");
+      new Notice(messages.panel.memoDeleted);
     } catch (caught) {
       error = getErrorMessage(caught);
     } finally {
@@ -347,11 +356,19 @@
     }
   }
 
-  function reloadSettings(): void {
-    settingsVersion += 1;
-    visibility = host.getSettings().defaultVisibility;
+  function reloadSettings(refreshMemos = true): void {
+    const latestSettings = readSettings();
 
-    if (isConfigured) {
+    currentSettings = latestSettings;
+
+    if (!refreshMemos) {
+      status = "";
+      return;
+    }
+
+    visibility = latestSettings.defaultVisibility;
+
+    if (hasConnection(latestSettings)) {
       void refresh();
     }
   }
@@ -386,7 +403,7 @@
   }
 
   function getErrorMessage(caught: unknown): string {
-    return caught instanceof Error ? caught.message : "Unexpected Memos error.";
+    return caught instanceof Error ? caught.message : messages.panel.unexpectedError;
   }
 
   function formatTime(value: string | undefined): string {
@@ -400,7 +417,7 @@
       return value;
     }
 
-    return date.toLocaleString();
+    return date.toLocaleString(localeForLanguage(currentSettings.language));
   }
 
   function resourceLabel(resource: MemoResource): string {
@@ -408,7 +425,7 @@
       resource.filename ??
       resource.name ??
       resource.publicId ??
-      String(resource.id ?? "resource")
+      String(resource.id ?? messages.panel.resource)
     );
   }
 
@@ -437,33 +454,33 @@
   <header class="obwm-header">
     <div class="obwm-title-group">
       <h2>Memos</h2>
-      <span>{status || "Ready"}</span>
+      <span>{status || messages.panel.ready}</span>
     </div>
 
     <div class="obwm-header-actions">
       <button
-        aria-label="Reload settings"
+        aria-label={messages.panel.reloadSettings}
         class="clickable-icon obwm-icon-button"
-        title="Reload settings"
+        title={messages.panel.reloadSettings}
         type="button"
-        on:click={reloadSettings}
+        on:click={() => reloadSettings()}
       >
         <span class="obwm-icon" use:icon={"rotate-ccw"}></span>
       </button>
       <button
-        aria-label="Refresh"
+        aria-label={messages.panel.refresh}
         class="clickable-icon obwm-icon-button"
         disabled={!isConfigured || loading}
-        title="Refresh"
+        title={messages.panel.refresh}
         type="button"
         on:click={refresh}
       >
         <span class="obwm-icon" use:icon={"refresh-cw"}></span>
       </button>
       <button
-        aria-label="Settings"
+        aria-label={messages.panel.settings}
         class="clickable-icon obwm-icon-button"
-        title="Settings"
+        title={messages.panel.settings}
         type="button"
         on:click={() => host.openSettings()}
       >
@@ -478,14 +495,14 @@
 
   {#if !isConfigured}
     <section class="obwm-empty">
-      <h3>Connect Memos</h3>
+      <h3>{messages.panel.connectMemos}</h3>
       <button class="mod-cta" type="button" on:click={() => host.openSettings()}>
-        Open settings
+        {messages.panel.openSettings}
       </button>
     </section>
   {:else}
     <div
-      aria-label="Memo composer"
+      aria-label={messages.panel.memoComposer}
       class="obwm-composer"
       role="region"
       on:dragover={handleDragOver}
@@ -496,14 +513,14 @@
           bind:value={content}
           class="obwm-compose-textarea"
           disabled={saving}
-          placeholder="Write a memo"
+          placeholder={messages.panel.writeMemo}
           rows="7"
         ></textarea>
 
         <div class="obwm-control-row">
           <select bind:value={visibility} disabled={saving}>
-            {#each Object.entries(VISIBILITY_OPTIONS) as [value, label]}
-              <option value={value}>{label}</option>
+            {#each VISIBILITY_VALUES as value}
+              <option value={value}>{visibilityLabels[value]}</option>
             {/each}
           </select>
 
@@ -514,7 +531,7 @@
             on:click={() => fileInput?.click()}
           >
             <span class="obwm-icon" use:icon={"paperclip"}></span>
-            Attach
+            {messages.panel.attach}
           </button>
 
           <input
@@ -527,7 +544,7 @@
 
           <button class="mod-cta obwm-submit" disabled={saving} type="submit">
             <span class="obwm-icon" use:icon={"send"}></span>
-            {saving ? "Publishing" : "Publish"}
+            {saving ? messages.panel.publishing : messages.panel.publish}
           </button>
         </div>
 
@@ -535,12 +552,12 @@
           <input
             bind:value={vaultPath}
             disabled={saving}
-            placeholder="Vault attachment path"
+            placeholder={messages.panel.vaultAttachmentPath}
             type="text"
             on:keydown={handleVaultKeydown}
           />
           <button class="obwm-button" disabled={saving || !vaultPath.trim()} type="button" on:click={addVaultAttachment}>
-            Add
+            {messages.panel.add}
           </button>
         </div>
 
@@ -549,12 +566,14 @@
             {#each attachments as attachment, index}
               <div class="obwm-attachment">
                 <span class="obwm-attachment-name">{attachment.name}</span>
-                <span class="obwm-attachment-meta">{attachment.source}</span>
+                <span class="obwm-attachment-meta">
+                  {uploadSourceLabel(currentSettings.language, attachment.source)}
+                </span>
                 <button
-                  aria-label="Remove attachment"
+                  aria-label={messages.panel.removeAttachment}
                   class="clickable-icon obwm-icon-button"
                   disabled={saving}
-                  title="Remove"
+                  title={messages.panel.remove}
                   type="button"
                   on:click={() => removeAttachment(index)}
                 >
@@ -569,10 +588,10 @@
 
     <section class="obwm-list-tools">
       <div class="obwm-filter-grid">
-        <input bind:value={search} placeholder="Search" type="search" />
+        <input bind:value={search} placeholder={messages.panel.search} type="search" />
 
         <select bind:value={selectedTag}>
-          <option value="">All tags</option>
+          <option value="">{messages.panel.allTags}</option>
           {#each tags as tag}
             <option value={tag}>#{tag}</option>
           {/each}
@@ -581,23 +600,23 @@
 
       <label class="obwm-checkbox">
         <input bind:checked={includeArchived} type="checkbox" on:change={refresh} />
-        <span>Archived</span>
+        <span>{messages.panel.archived}</span>
       </label>
     </section>
 
     <section class="obwm-list">
       {#if loading && memos.length === 0}
-        <div class="obwm-message">Loading memos...</div>
+        <div class="obwm-message">{messages.panel.loadingMemos}</div>
       {:else if filteredMemos.length === 0}
-        <div class="obwm-message">No memos found.</div>
+        <div class="obwm-message">{messages.panel.noMemosFound}</div>
       {:else}
         {#each filteredMemos as memo (memoKey(memo))}
           <article class:obwm-archived={isArchived(memo)} class="obwm-memo">
             <div class="obwm-memo-meta">
               <span>{formatTime(memo.displayTime || memo.createTime)}</span>
-              <span>{memo.visibility}</span>
+              <span>{visibilityLabels[memo.visibility]}</span>
               {#if memo.pinned}
-                <span>Pinned</span>
+                <span>{messages.panel.pinned}</span>
               {/if}
             </div>
 
@@ -605,8 +624,8 @@
               <textarea bind:value={editContent} class="obwm-edit-textarea" rows="6"></textarea>
               <div class="obwm-control-row">
                 <select bind:value={editVisibility}>
-                  {#each Object.entries(VISIBILITY_OPTIONS) as [value, label]}
-                    <option value={value}>{label}</option>
+                  {#each VISIBILITY_VALUES as value}
+                    <option value={value}>{visibilityLabels[value]}</option>
                   {/each}
                 </select>
 
@@ -616,9 +635,9 @@
                   type="button"
                   on:click={() => saveEdit(memo)}
                 >
-                  Save
+                  {messages.panel.save}
                 </button>
-                <button class="obwm-button" type="button" on:click={cancelEdit}>Cancel</button>
+                <button class="obwm-button" type="button" on:click={cancelEdit}>{messages.panel.cancel}</button>
               </div>
             {:else}
               <div class="obwm-memo-content">{memo.content}</div>
@@ -634,7 +653,7 @@
               <div class="obwm-memo-actions">
                 <button class="obwm-button" type="button" on:click={() => startEdit(memo)}>
                   <span class="obwm-icon" use:icon={"pencil"}></span>
-                  Edit
+                  {messages.panel.edit}
                 </button>
                 <button
                   class="obwm-button"
@@ -643,7 +662,7 @@
                   on:click={() => togglePinned(memo)}
                 >
                   <span class="obwm-icon" use:icon={memo.pinned ? "pin-off" : "pin"}></span>
-                  {memo.pinned ? "Unpin" : "Pin"}
+                  {memo.pinned ? messages.panel.unpin : messages.panel.pin}
                 </button>
                 <button
                   class="obwm-button"
@@ -652,7 +671,7 @@
                   on:click={() => toggleArchived(memo)}
                 >
                   <span class="obwm-icon" use:icon={isArchived(memo) ? "archive-restore" : "archive"}></span>
-                  {isArchived(memo) ? "Restore" : "Archive"}
+                  {isArchived(memo) ? messages.panel.restore : messages.panel.archive}
                 </button>
                 <button
                   class="obwm-button obwm-danger"
@@ -661,7 +680,7 @@
                   on:click={() => deleteMemo(memo)}
                 >
                   <span class="obwm-icon" use:icon={"trash-2"}></span>
-                  Delete
+                  {messages.panel.delete}
                 </button>
               </div>
             {/if}
@@ -670,7 +689,7 @@
 
         {#if nextPageToken}
           <button class="obwm-load-more" disabled={loading} type="button" on:click={loadMore}>
-            {loading ? "Loading" : "Load more"}
+            {loading ? messages.panel.loading : messages.panel.loadMore}
           </button>
         {/if}
       {/if}

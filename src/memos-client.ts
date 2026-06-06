@@ -1,6 +1,8 @@
 import { requestUrl } from "obsidian";
 import type { RequestUrlResponse } from "obsidian";
 
+import { getMessages } from "./i18n";
+import type { MessageBundle } from "./i18n";
 import type {
   CreateMemoInput,
   ListMemosInput,
@@ -45,10 +47,12 @@ export class MemosApiError extends Error {
 
 export class MemosClient implements MemosApi {
   private readonly baseUrl: string;
+  private readonly messages: MessageBundle;
   private readonly token: string;
 
   constructor(settings: ObWithMemosSettings) {
     this.baseUrl = settings.memosUrl.trim().replace(/\/+$/, "");
+    this.messages = getMessages(settings.language);
     this.token = settings.accessToken.trim();
   }
 
@@ -191,12 +195,12 @@ export class MemosClient implements MemosApi {
 
     throw lastError instanceof Error
       ? lastError
-      : new Error("Unable to upload resource to Memos.");
+      : new Error(this.messages.client.uploadFailed);
   }
 
   private async request<T>(path: string, options: JsonRequest = {}): Promise<T> {
     if (!this.baseUrl) {
-      throw new Error("Memos Base URL is not configured.");
+      throw new Error(this.messages.client.baseUrlMissing);
     }
 
     const headers: Record<string, string> = {
@@ -227,7 +231,7 @@ export class MemosClient implements MemosApi {
       url: this.buildUrl(path, options.query)
     });
 
-    return parseResponse<T>(response);
+    return parseResponse<T>(response, this.messages);
   }
 
   private buildUrl(path: string, query: Record<string, QueryValue> = {}): string {
@@ -300,10 +304,10 @@ function normalizeVisibility(value: unknown): MemoVisibility {
   return "PRIVATE";
 }
 
-function parseResponse<T>(response: RequestUrlResponse): T {
+function parseResponse<T>(response: RequestUrlResponse, messages: MessageBundle): T {
   if (response.status < 200 || response.status >= 300) {
     throw new MemosApiError(
-      `Memos request failed with status ${response.status}.`,
+      messages.client.requestFailed(response.status),
       response.status,
       response.text
     );

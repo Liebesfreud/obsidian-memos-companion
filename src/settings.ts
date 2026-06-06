@@ -1,8 +1,9 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 
+import { getLanguage, getMessages, getVisibilityOptions, LANGUAGE_OPTIONS } from "./i18n";
 import { MemosClient } from "./memos-client";
 import type ObWithMemosPlugin from "./main";
-import { VISIBILITY_OPTIONS } from "./types";
+import { VISIBILITY_VALUES } from "./types";
 import type { MemoVisibility } from "./types";
 
 export class MemosSettingTab extends PluginSettingTab {
@@ -15,15 +16,36 @@ export class MemosSettingTab extends PluginSettingTab {
 
   display(): void {
     const { containerEl } = this;
+    const messages = getMessages(this.plugin.settings.language);
+    const visibilityLabels = getVisibilityOptions(this.plugin.settings.language);
+
     containerEl.empty();
     containerEl.createEl("h2", { text: "Memos" });
 
     new Setting(containerEl)
-      .setName("Base URL")
-      .setDesc("Example: https://memos.example.com")
+      .setName(messages.settings.language.name)
+      .setDesc(messages.settings.language.desc)
+      .addDropdown((dropdown) => {
+        for (const [value, label] of Object.entries(LANGUAGE_OPTIONS)) {
+          dropdown.addOption(value, label);
+        }
+
+        dropdown
+          .setValue(this.plugin.settings.language)
+          .onChange(async (value) => {
+            this.plugin.settings.language = getLanguage(value);
+            await this.plugin.saveSettings();
+            this.plugin.notifySettingsChanged();
+            this.display();
+          });
+      });
+
+    new Setting(containerEl)
+      .setName(messages.settings.baseUrl.name)
+      .setDesc(messages.settings.baseUrl.desc)
       .addText((text) => {
         text
-          .setPlaceholder("https://memos.example.com")
+          .setPlaceholder(messages.settings.baseUrl.placeholder)
           .setValue(this.plugin.settings.memosUrl)
           .onChange(async (value) => {
             this.plugin.settings.memosUrl = value.trim();
@@ -32,12 +54,12 @@ export class MemosSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Access token")
-      .setDesc("Create this in Memos account settings.")
+      .setName(messages.settings.accessToken.name)
+      .setDesc(messages.settings.accessToken.desc)
       .addText((text) => {
         text.inputEl.type = "password";
         text
-          .setPlaceholder("memos access token")
+          .setPlaceholder(messages.settings.accessToken.placeholder)
           .setValue(this.plugin.settings.accessToken)
           .onChange(async (value) => {
             this.plugin.settings.accessToken = value.trim();
@@ -46,10 +68,10 @@ export class MemosSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Default visibility")
+      .setName(messages.settings.defaultVisibility.name)
       .addDropdown((dropdown) => {
-        for (const [value, label] of Object.entries(VISIBILITY_OPTIONS)) {
-          dropdown.addOption(value, label);
+        for (const value of VISIBILITY_VALUES) {
+          dropdown.addOption(value, visibilityLabels[value]);
         }
 
         dropdown
@@ -61,14 +83,14 @@ export class MemosSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Page size")
-      .setDesc("Number of memos to load per request.")
+      .setName(messages.settings.pageSize.name)
+      .setDesc(messages.settings.pageSize.desc)
       .addText((text) => {
         text.inputEl.type = "number";
         text.inputEl.min = "5";
         text.inputEl.max = "100";
         text
-          .setPlaceholder("20")
+          .setPlaceholder(messages.settings.pageSize.placeholder)
           .setValue(String(this.plugin.settings.pageSize))
           .onChange(async (value) => {
             const pageSize = Number.parseInt(value, 10);
@@ -81,21 +103,21 @@ export class MemosSettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName("Connection")
-      .setDesc("Verify the URL and token.")
+      .setName(messages.settings.connection.name)
+      .setDesc(messages.settings.connection.desc)
       .addButton((button) => {
-        button.setButtonText("Test").onClick(async () => {
+        button.setButtonText(messages.settings.connection.test).onClick(async () => {
           button.setDisabled(true);
-          button.setButtonText("Testing...");
+          button.setButtonText(messages.settings.connection.testing);
 
           try {
             await new MemosClient(this.plugin.settings).testConnection();
-            new Notice("Connected to Memos.");
+            new Notice(messages.settings.connection.connected);
           } catch (error) {
-            new Notice(error instanceof Error ? error.message : "Unable to connect to Memos.");
+            new Notice(error instanceof Error ? error.message : messages.settings.connection.failed);
           } finally {
             button.setDisabled(false);
-            button.setButtonText("Test");
+            button.setButtonText(messages.settings.connection.test);
           }
         });
       });
