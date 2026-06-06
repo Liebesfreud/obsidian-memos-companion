@@ -33,6 +33,7 @@
   let loading = false;
   let memos: Memo[] = [];
   let nextPageToken = "";
+  let openActionMenuName: string | null = null;
   let remoteTags: string[] = [];
   let saving = false;
   let savingEditName: string | null = null;
@@ -55,13 +56,22 @@
   });
 
   onMount(() => {
+    window.addEventListener("click", closeActionMenu);
+    window.addEventListener("keydown", handleWindowKeydown);
+
     if (hasConnection(currentSettings)) {
       void refresh();
     }
 
-    return host.onSettingsChange(() => {
+    const unsubscribeSettings = host.onSettingsChange(() => {
       reloadSettings(false);
     });
+
+    return () => {
+      unsubscribeSettings();
+      window.removeEventListener("click", closeActionMenu);
+      window.removeEventListener("keydown", handleWindowKeydown);
+    };
   });
 
   function icon(node: HTMLElement, name: string): { update(nextName: string): void } {
@@ -80,6 +90,20 @@
 
   function hasConnection(settings: ObWithMemosSettings): boolean {
     return Boolean(settings.memosUrl.trim() && settings.accessToken.trim());
+  }
+
+  function closeActionMenu(): void {
+    openActionMenuName = null;
+  }
+
+  function handleWindowKeydown(event: KeyboardEvent): void {
+    if (event.key === "Escape") {
+      closeActionMenu();
+    }
+  }
+
+  function toggleActionMenu(memo: Memo): void {
+    openActionMenuName = openActionMenuName === memo.name ? null : memo.name;
   }
 
   async function refresh(): Promise<void> {
@@ -268,9 +292,14 @@
   }
 
   function startEdit(memo: Memo): void {
+    closeActionMenu();
     editingName = memo.name;
     editContent = memo.content;
     editVisibility = memo.visibility;
+  }
+
+  function startEditFromMenu(memo: Memo): void {
+    startEdit(memo);
   }
 
   function cancelEdit(): void {
@@ -303,6 +332,8 @@
   }
 
   async function deleteMemo(memo: Memo): Promise<void> {
+    closeActionMenu();
+
     if (!window.confirm(messages.panel.deleteConfirm)) {
       return;
     }
@@ -322,6 +353,7 @@
   }
 
   async function togglePinned(memo: Memo): Promise<void> {
+    closeActionMenu();
     busyMemoName = memo.name;
     error = "";
 
@@ -336,6 +368,7 @@
   }
 
   async function toggleArchived(memo: Memo): Promise<void> {
+    closeActionMenu();
     busyMemoName = memo.name;
     error = "";
 
@@ -354,6 +387,18 @@
     } finally {
       busyMemoName = null;
     }
+  }
+
+  async function deleteMemoFromMenu(memo: Memo): Promise<void> {
+    await deleteMemo(memo);
+  }
+
+  async function toggleArchivedFromMenu(memo: Memo): Promise<void> {
+    await toggleArchived(memo);
+  }
+
+  async function togglePinnedFromMenu(memo: Memo): Promise<void> {
+    await togglePinned(memo);
   }
 
   function reloadSettings(refreshMemos = true): void {
@@ -613,15 +658,83 @@
         <div class="obwm-message">{messages.panel.noMemosFound}</div>
       {:else}
         {#each filteredMemos as memo (memoKey(memo))}
-          <article class:obwm-archived={isArchived(memo)} class="obwm-memo">
-            <div class="obwm-memo-meta">
-              <span>{formatTime(memo.displayTime || memo.createTime)}</span>
-              <span class="obwm-meta-pill">{visibilityLabels[memo.visibility]}</span>
-              {#if memo.pinned}
-                <span class="obwm-meta-pill obwm-pinned-pill">
-                  <span class="obwm-icon" use:icon={"pin"}></span>
-                  {messages.panel.pinned}
-                </span>
+          <article
+            class:obwm-archived={isArchived(memo)}
+            class:obwm-menu-open={openActionMenuName === memo.name}
+            class="obwm-memo"
+          >
+            <div class="obwm-memo-topline">
+              <div class="obwm-memo-meta">
+                <span>{formatTime(memo.displayTime || memo.createTime)}</span>
+                <span class="obwm-meta-pill">{visibilityLabels[memo.visibility]}</span>
+                {#if memo.pinned}
+                  <span class="obwm-meta-pill obwm-pinned-pill">
+                    <span class="obwm-icon" use:icon={"pin"}></span>
+                    {messages.panel.pinned}
+                  </span>
+                {/if}
+              </div>
+
+              {#if editingName !== memo.name}
+                <div class="obwm-more-menu">
+                  <button
+                    aria-expanded={openActionMenuName === memo.name}
+                    aria-haspopup="menu"
+                    aria-label={messages.panel.moreActions}
+                    class={openActionMenuName === memo.name
+                      ? "clickable-icon obwm-action-button obwm-more-button obwm-more-button-active"
+                      : "clickable-icon obwm-action-button obwm-more-button"}
+                    title={messages.panel.moreActions}
+                    type="button"
+                    on:click|stopPropagation={() => toggleActionMenu(memo)}
+                  >
+                    <span class="obwm-icon" use:icon={"more-horizontal"}></span>
+                  </button>
+
+                  {#if openActionMenuName === memo.name}
+                    <div class="obwm-action-menu" role="menu">
+                      <button
+                        class="obwm-menu-item"
+                        role="menuitem"
+                        type="button"
+                        on:click={() => startEditFromMenu(memo)}
+                      >
+                        <span class="obwm-icon" use:icon={"pencil"}></span>
+                        <span>{messages.panel.edit}</span>
+                      </button>
+                      <button
+                        class="obwm-menu-item"
+                        disabled={busyMemoName === memo.name}
+                        role="menuitem"
+                        type="button"
+                        on:click={() => void togglePinnedFromMenu(memo)}
+                      >
+                        <span class="obwm-icon" use:icon={memo.pinned ? "pin-off" : "pin"}></span>
+                        <span>{memo.pinned ? messages.panel.unpin : messages.panel.pin}</span>
+                      </button>
+                      <button
+                        class="obwm-menu-item"
+                        disabled={busyMemoName === memo.name}
+                        role="menuitem"
+                        type="button"
+                        on:click={() => void toggleArchivedFromMenu(memo)}
+                      >
+                        <span class="obwm-icon" use:icon={isArchived(memo) ? "archive-restore" : "archive"}></span>
+                        <span>{isArchived(memo) ? messages.panel.restore : messages.panel.archive}</span>
+                      </button>
+                      <button
+                        class="obwm-menu-item obwm-danger"
+                        disabled={busyMemoName === memo.name}
+                        role="menuitem"
+                        type="button"
+                        on:click={() => void deleteMemoFromMenu(memo)}
+                      >
+                        <span class="obwm-icon" use:icon={"trash-2"}></span>
+                        <span>{messages.panel.delete}</span>
+                      </button>
+                    </div>
+                  {/if}
+                </div>
               {/if}
             </div>
 
@@ -655,47 +768,6 @@
                 </div>
               {/if}
 
-              <div class="obwm-memo-actions">
-                <button
-                  aria-label={messages.panel.edit}
-                  class="clickable-icon obwm-action-button"
-                  title={messages.panel.edit}
-                  type="button"
-                  on:click={() => startEdit(memo)}
-                >
-                  <span class="obwm-icon" use:icon={"pencil"}></span>
-                </button>
-                <button
-                  aria-label={memo.pinned ? messages.panel.unpin : messages.panel.pin}
-                  class="clickable-icon obwm-action-button"
-                  disabled={busyMemoName === memo.name}
-                  title={memo.pinned ? messages.panel.unpin : messages.panel.pin}
-                  type="button"
-                  on:click={() => togglePinned(memo)}
-                >
-                  <span class="obwm-icon" use:icon={memo.pinned ? "pin-off" : "pin"}></span>
-                </button>
-                <button
-                  aria-label={isArchived(memo) ? messages.panel.restore : messages.panel.archive}
-                  class="clickable-icon obwm-action-button"
-                  disabled={busyMemoName === memo.name}
-                  title={isArchived(memo) ? messages.panel.restore : messages.panel.archive}
-                  type="button"
-                  on:click={() => toggleArchived(memo)}
-                >
-                  <span class="obwm-icon" use:icon={isArchived(memo) ? "archive-restore" : "archive"}></span>
-                </button>
-                <button
-                  aria-label={messages.panel.delete}
-                  class="clickable-icon obwm-action-button obwm-danger"
-                  disabled={busyMemoName === memo.name}
-                  title={messages.panel.delete}
-                  type="button"
-                  on:click={() => deleteMemo(memo)}
-                >
-                  <span class="obwm-icon" use:icon={"trash-2"}></span>
-                </button>
-              </div>
             {/if}
           </article>
         {/each}
