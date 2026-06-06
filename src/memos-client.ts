@@ -75,13 +75,19 @@ export class MemosClient implements MemosApi {
       method: "POST"
     });
 
-    return normalizeMemo(response);
+    return normalizeMemo(response, this.baseUrl);
   }
 
   async deleteMemo(name: string): Promise<void> {
     await this.request<void>(apiNamePath(name), {
       method: "DELETE"
     });
+  }
+
+  async getMemo(name: string): Promise<Memo> {
+    const response = await this.request<unknown>(apiNamePath(name));
+
+    return normalizeMemo(response, this.baseUrl);
   }
 
   async listMemos(input: ListMemosInput = {}): Promise<ListMemosResult> {
@@ -101,13 +107,13 @@ export class MemosClient implements MemosApi {
 
     if (Array.isArray(response)) {
       return {
-        memos: response.map(normalizeMemo),
+        memos: response.map((memo) => normalizeMemo(memo, this.baseUrl)),
         nextPageToken: ""
       };
     }
 
     return {
-      memos: (response.memos ?? []).map(normalizeMemo),
+      memos: (response.memos ?? []).map((memo) => normalizeMemo(memo, this.baseUrl)),
       nextPageToken: response.nextPageToken ?? response.next_page_token ?? ""
     };
   }
@@ -167,7 +173,7 @@ export class MemosClient implements MemosApi {
       query: updateMask.length ? { updateMask: updateMask.join(",") } : undefined
     });
 
-    return normalizeMemo(response);
+    return normalizeMemo(response, this.baseUrl);
   }
 
   async uploadResource(file: UploadFile): Promise<MemoResource> {
@@ -183,7 +189,7 @@ export class MemosClient implements MemosApi {
           method: "POST"
         });
 
-        return normalizeResourceResponse(response);
+        return normalizeResourceResponse(response, this.baseUrl);
       } catch (error) {
         lastError = error;
 
@@ -260,12 +266,16 @@ function asString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-function normalizeMemo(value: unknown): Memo {
+function normalizeMemo(value: unknown, baseUrl: string): Memo {
   const record = asRecord(value);
   const id = record.id;
   const name = asString(record.name) || (id !== undefined ? `memos/${String(id)}` : "");
-  const resources = Array.isArray(record.resources)
-    ? record.resources.map(normalizeResourceResponse)
+  const resourceValues = [
+    ...(Array.isArray(record.resources) ? record.resources : []),
+    ...(Array.isArray(record.attachments) ? record.attachments : [])
+  ];
+  const resources = resourceValues.length
+    ? resourceValues.map((resource) => normalizeResourceResponse(resource, baseUrl))
     : undefined;
   const visibility = normalizeVisibility(record.visibility);
 
@@ -275,6 +285,7 @@ function normalizeMemo(value: unknown): Memo {
     id: typeof id === "number" || typeof id === "string" ? id : undefined,
     name,
     pinned: typeof record.pinned === "boolean" ? record.pinned : undefined,
+    relations: normalizeRelations(record.relations),
     resources,
     rowStatus: asString(record.rowStatus) || asString(record.row_status) || undefined,
     tags: Array.isArray(record.tags) ? record.tags.filter(isString) : undefined,
@@ -282,18 +293,73 @@ function normalizeMemo(value: unknown): Memo {
   };
 }
 
-function normalizeResourceResponse(value: unknown): MemoResource {
+function normalizeResourceResponse(value: unknown, baseUrl = ""): MemoResource {
   const record = asRecord(value);
   const nested = asRecord(record.resource);
   const source = Object.keys(nested).length ? nested : record;
   const id = source.id;
+  const name = asString(source.name) || (id !== undefined ? `resources/${String(id)}` : undefined);
+  const filename = asString(source.filename);
+  const externalLink = asString(source.externalLink);
 
   return {
     ...source,
+    content: asString(source.content) || undefined,
+    externalLink: externalLink || undefined,
+    filename: filename || undefined,
     id: typeof id === "number" || typeof id === "string" ? id : undefined,
-    name: asString(source.name) || (id !== undefined ? `resources/${String(id)}` : undefined),
+    name,
+    previewUrl: buildResourcePreviewUrl(baseUrl, name, filename, externalLink),
     type: asString(source.type) || asString(source.contentType) || undefined
   };
+}
+
+function normalizeRelations(value: unknown): Memo["relations"] {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  return value.map((relation) => {
+    const record = asRecord(relation);
+    const memo = asRecord(record.memo);
+    const relatedMemo = asRecord(record.relatedMemo);
+
+    return {
+      memo: {
+        name: asString(memo.name) || undefined,
+        snippet: asString(memo.snippet) || undefined
+      },
+      relatedMemo: {
+        name: asString(relatedMemo.name) || undefined,
+        snippet: asString(relatedMemo.snippet) || undefined
+      },
+      type: asString(record.type) || undefined
+    };
+  });
+}
+
+function buildResourcePreviewUrl(
+  baseUrl: string,
+  name: string | undefined,
+  filename: string,
+  externalLink: string
+): string | undefined {
+  if (externalLink) {
+    return externalLink.startsWith("/") && baseUrl ? `${baseUrl}${externalLink}` : externalLink;
+  }
+
+  if (!baseUrl || !name) {
+    return undefined;
+  }
+
+  const resourcePath = name
+    .replace(/^\/+/, "")
+    .split("/")
+    .map(encodeURIComponent)
+    .join("/");
+  const resourceFilename = encodeURIComponent(filename || name.split("/").pop() || "resource");
+
+  return `${baseUrl}/file/${resourcePath}/${resourceFilename}`;
 }
 
 function normalizeVisibility(value: unknown): MemoVisibility {

@@ -370,6 +370,30 @@
   white-space: pre-wrap;
 }
 
+.obwm-image-grid {
+  display: grid;
+  gap: var(--size-2-3);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  margin-top: var(--size-4-2);
+}
+
+.obwm-image-link {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  display: block;
+  min-height: 120px;
+  overflow: hidden;
+}
+
+.obwm-image-link img {
+  display: block;
+  height: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  width: 100%;
+}
+
 .obwm-resource-list {
   display: flex;
   flex-wrap: wrap;
@@ -387,6 +411,37 @@
   padding: 3px 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.obwm-comments {
+  border-top: 1px solid var(--background-modifier-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-3);
+  margin-top: var(--size-4-3);
+  padding-top: var(--size-4-2);
+}
+
+.obwm-comments-title,
+.obwm-comment-meta {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.obwm-comments-title {
+  font-weight: 600;
+}
+
+.obwm-comment {
+  border-left: 2px solid var(--background-modifier-border);
+  padding-left: var(--size-4-2);
+}
+
+.obwm-comment-content {
+  line-height: var(--line-height-normal);
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .obwm-more-menu {

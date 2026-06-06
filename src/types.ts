@@ -23,18 +23,32 @@ export const DEFAULT_SETTINGS: ObWithMemosSettings = {
 };
 
 export interface MemoResource {
+  content?: string;
   createTime?: string;
   externalLink?: string;
   filename?: string;
   id?: number | string;
   memo?: string;
+  motionMedia?: unknown;
   name?: string;
+  previewUrl?: string;
   publicId?: string;
   size?: number | string;
   type?: string;
   uid?: string;
   updateTime?: string;
   [key: string]: unknown;
+}
+
+export interface MemoRelationTarget {
+  name?: string;
+  snippet?: string;
+}
+
+export interface MemoRelation {
+  memo?: MemoRelationTarget;
+  relatedMemo?: MemoRelationTarget;
+  type?: string;
 }
 
 export interface Memo {
@@ -44,7 +58,7 @@ export interface Memo {
   id?: number | string;
   name: string;
   pinned?: boolean;
-  relations?: unknown[];
+  relations?: MemoRelation[];
   resources?: MemoResource[];
   rowStatus?: string;
   tags?: string[];
@@ -95,6 +109,7 @@ export interface MemosApi {
   archiveMemo(name: string): Promise<Memo>;
   createMemo(input: CreateMemoInput): Promise<Memo>;
   deleteMemo(name: string): Promise<void>;
+  getMemo(name: string): Promise<Memo>;
   listMemos(input?: ListMemosInput): Promise<ListMemosResult>;
   listTags(): Promise<string[]>;
   restoreMemo(name: string): Promise<Memo>;

@@ -23,6 +23,7 @@
 
   let attachments: UploadFile[] = [];
   let busyMemoName: string | null = null;
+  let commentsByMemoName: Record<string, Memo[]> = {};
   let content = "";
   let editContent = "";
   let editingName: string | null = null;
@@ -126,9 +127,11 @@
       ]);
 
       memos = memoResult.memos;
+      commentsByMemoName = {};
       nextPageToken = memoResult.nextPageToken;
       remoteTags = tagResult;
       status = messages.panel.loaded(memos.length);
+      void loadCommentsForMemos(memos);
     } catch (caught) {
       error = getErrorMessage(caught);
       status = "";
@@ -155,6 +158,7 @@
       memos = [...memos, ...result.memos];
       nextPageToken = result.nextPageToken;
       status = messages.panel.loaded(memos.length);
+      void loadCommentsForMemos(result.memos);
     } catch (caught) {
       error = getErrorMessage(caught);
     } finally {
@@ -422,6 +426,63 @@
     memos = memos.map((memo) => (memo.name === name ? updated : memo));
   }
 
+  async function loadCommentsForMemos(targetMemos: Memo[]): Promise<void> {
+    const targets = targetMemos
+      .map((memo) => ({
+        memo,
+        names: commentMemoNames(memo)
+      }))
+      .filter(({ names }) => names.length > 0);
+
+    if (!targets.length) {
+      return;
+    }
+
+    const client = host.getClient();
+    const entries = await Promise.all(
+      targets.map(async ({ memo, names }) => {
+        const comments = await Promise.all(
+          names.map(async (name) => {
+            try {
+              return await client.getMemo(name);
+            } catch {
+              return null;
+            }
+          })
+        );
+
+        return [
+          memo.name,
+          comments.filter((comment): comment is Memo => comment !== null)
+        ] as const;
+      })
+    );
+    const nextComments = { ...commentsByMemoName };
+
+    for (const [memoName, comments] of entries) {
+      if (comments.length) {
+        nextComments[memoName] = comments;
+      } else {
+        delete nextComments[memoName];
+      }
+    }
+
+    commentsByMemoName = nextComments;
+  }
+
+  function commentMemoNames(memo: Memo): string[] {
+    return Array.from(
+      new Set(
+        (memo.relations ?? [])
+          .filter((relation) => relation.type === "COMMENT")
+          .map((relation) =>
+            relation.relatedMemo?.name === memo.name ? relation.memo?.name : undefined
+          )
+          .filter((name): name is string => Boolean(name && name !== memo.name))
+      )
+    );
+  }
+
   function memoKey(memo: Memo): string {
     return memo.name || String(memo.id ?? memo.uid ?? memo.createTime ?? memo.content);
   }
@@ -472,6 +533,26 @@
       resource.publicId ??
       String(resource.id ?? messages.panel.resource)
     );
+  }
+
+  function imageResources(memo: Memo): MemoResource[] {
+    return (memo.resources ?? []).filter((resource) => isImageResource(resource) && resourcePreviewUrl(resource));
+  }
+
+  function attachmentResources(memo: Memo): MemoResource[] {
+    return (memo.resources ?? []).filter((resource) => !isImageResource(resource) || !resourcePreviewUrl(resource));
+  }
+
+  function isImageResource(resource: MemoResource): boolean {
+    const label = resourceLabel(resource);
+    return Boolean(
+      resource.type?.startsWith("image/") ||
+      /\.(avif|gif|jpe?g|png|svg|webp)$/i.test(label)
+    );
+  }
+
+  function resourcePreviewUrl(resource: MemoResource): string {
+    return resource.previewUrl ?? resource.externalLink ?? "";
   }
 
   function guessMimeType(name: string): string {
@@ -760,10 +841,41 @@
             {:else}
               <div class="obwm-memo-content">{memo.content}</div>
 
-              {#if memo.resources?.length}
+              {#if imageResources(memo).length}
+                <div class="obwm-image-grid">
+                  {#each imageResources(memo) as resource}
+                    <a
+                      class="obwm-image-link"
+                      href={resourcePreviewUrl(resource)}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <img
+                        alt={resourceLabel(resource)}
+                        loading="lazy"
+                        src={resourcePreviewUrl(resource)}
+                      />
+                    </a>
+                  {/each}
+                </div>
+              {/if}
+
+              {#if attachmentResources(memo).length}
                 <div class="obwm-resource-list">
-                  {#each memo.resources as resource}
+                  {#each attachmentResources(memo) as resource}
                     <span>{resourceLabel(resource)}</span>
+                  {/each}
+                </div>
+              {/if}
+
+              {#if commentsByMemoName[memo.name]?.length}
+                <div class="obwm-comments">
+                  <div class="obwm-comments-title">{messages.panel.comments}</div>
+                  {#each commentsByMemoName[memo.name] as comment (memoKey(comment))}
+                    <div class="obwm-comment">
+                      <div class="obwm-comment-meta">{formatTime(comment.displayTime || comment.createTime)}</div>
+                      <div class="obwm-comment-content">{comment.content}</div>
+                    </div>
                   {/each}
                 </div>
               {/if}
