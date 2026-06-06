@@ -454,7 +454,7 @@
   <header class="obwm-header">
     <div class="obwm-title-group">
       <h2>Memos</h2>
-      <span>{status || messages.panel.ready}</span>
+      <span class="obwm-status-pill">{status || messages.panel.ready}</span>
     </div>
 
     <div class="obwm-header-actions">
@@ -508,31 +508,33 @@
       on:dragover={handleDragOver}
       on:drop={handleDrop}
     >
-      <form on:submit|preventDefault={publishMemo}>
+      <form class="obwm-composer-form" on:submit|preventDefault={publishMemo}>
         <textarea
           bind:value={content}
           class="obwm-compose-textarea"
           disabled={saving}
           placeholder={messages.panel.writeMemo}
-          rows="7"
+          rows="5"
         ></textarea>
 
-        <div class="obwm-control-row">
-          <select bind:value={visibility} disabled={saving}>
-            {#each VISIBILITY_VALUES as value}
-              <option value={value}>{visibilityLabels[value]}</option>
-            {/each}
-          </select>
+        <div class="obwm-composer-toolbar">
+          <div class="obwm-toolbar-group">
+            <select class="obwm-visibility-select" bind:value={visibility} disabled={saving}>
+              {#each VISIBILITY_VALUES as value}
+                <option value={value}>{visibilityLabels[value]}</option>
+              {/each}
+            </select>
 
-          <button
-            class="obwm-button"
-            disabled={saving}
-            type="button"
-            on:click={() => fileInput?.click()}
-          >
-            <span class="obwm-icon" use:icon={"paperclip"}></span>
-            {messages.panel.attach}
-          </button>
+            <button
+              class="obwm-button obwm-soft-button"
+              disabled={saving}
+              type="button"
+              on:click={() => fileInput?.click()}
+            >
+              <span class="obwm-icon" use:icon={"paperclip"}></span>
+              {messages.panel.attach}
+            </button>
+          </div>
 
           <input
             bind:this={fileInput}
@@ -556,7 +558,7 @@
             type="text"
             on:keydown={handleVaultKeydown}
           />
-          <button class="obwm-button" disabled={saving || !vaultPath.trim()} type="button" on:click={addVaultAttachment}>
+          <button class="obwm-button obwm-soft-button" disabled={saving || !vaultPath.trim()} type="button" on:click={addVaultAttachment}>
             {messages.panel.add}
           </button>
         </div>
@@ -614,16 +616,19 @@
           <article class:obwm-archived={isArchived(memo)} class="obwm-memo">
             <div class="obwm-memo-meta">
               <span>{formatTime(memo.displayTime || memo.createTime)}</span>
-              <span>{visibilityLabels[memo.visibility]}</span>
+              <span class="obwm-meta-pill">{visibilityLabels[memo.visibility]}</span>
               {#if memo.pinned}
-                <span>{messages.panel.pinned}</span>
+                <span class="obwm-meta-pill obwm-pinned-pill">
+                  <span class="obwm-icon" use:icon={"pin"}></span>
+                  {messages.panel.pinned}
+                </span>
               {/if}
             </div>
 
             {#if editingName === memo.name}
               <textarea bind:value={editContent} class="obwm-edit-textarea" rows="6"></textarea>
-              <div class="obwm-control-row">
-                <select bind:value={editVisibility}>
+              <div class="obwm-edit-actions">
+                <select class="obwm-visibility-select" bind:value={editVisibility}>
                   {#each VISIBILITY_VALUES as value}
                     <option value={value}>{visibilityLabels[value]}</option>
                   {/each}
@@ -637,7 +642,7 @@
                 >
                   {messages.panel.save}
                 </button>
-                <button class="obwm-button" type="button" on:click={cancelEdit}>{messages.panel.cancel}</button>
+                <button class="obwm-button obwm-soft-button" type="button" on:click={cancelEdit}>{messages.panel.cancel}</button>
               </div>
             {:else}
               <div class="obwm-memo-content">{memo.content}</div>
@@ -651,36 +656,44 @@
               {/if}
 
               <div class="obwm-memo-actions">
-                <button class="obwm-button" type="button" on:click={() => startEdit(memo)}>
+                <button
+                  aria-label={messages.panel.edit}
+                  class="clickable-icon obwm-action-button"
+                  title={messages.panel.edit}
+                  type="button"
+                  on:click={() => startEdit(memo)}
+                >
                   <span class="obwm-icon" use:icon={"pencil"}></span>
-                  {messages.panel.edit}
                 </button>
                 <button
-                  class="obwm-button"
+                  aria-label={memo.pinned ? messages.panel.unpin : messages.panel.pin}
+                  class="clickable-icon obwm-action-button"
                   disabled={busyMemoName === memo.name}
+                  title={memo.pinned ? messages.panel.unpin : messages.panel.pin}
                   type="button"
                   on:click={() => togglePinned(memo)}
                 >
                   <span class="obwm-icon" use:icon={memo.pinned ? "pin-off" : "pin"}></span>
-                  {memo.pinned ? messages.panel.unpin : messages.panel.pin}
                 </button>
                 <button
-                  class="obwm-button"
+                  aria-label={isArchived(memo) ? messages.panel.restore : messages.panel.archive}
+                  class="clickable-icon obwm-action-button"
                   disabled={busyMemoName === memo.name}
+                  title={isArchived(memo) ? messages.panel.restore : messages.panel.archive}
                   type="button"
                   on:click={() => toggleArchived(memo)}
                 >
                   <span class="obwm-icon" use:icon={isArchived(memo) ? "archive-restore" : "archive"}></span>
-                  {isArchived(memo) ? messages.panel.restore : messages.panel.archive}
                 </button>
                 <button
-                  class="obwm-button obwm-danger"
+                  aria-label={messages.panel.delete}
+                  class="clickable-icon obwm-action-button obwm-danger"
                   disabled={busyMemoName === memo.name}
+                  title={messages.panel.delete}
                   type="button"
                   on:click={() => deleteMemo(memo)}
                 >
                   <span class="obwm-icon" use:icon={"trash-2"}></span>
-                  {messages.panel.delete}
                 </button>
               </div>
             {/if}

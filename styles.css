@@ -3,6 +3,7 @@
 }
 
 .obwm-panel {
+  background: var(--background-secondary);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -14,50 +15,71 @@
 }
 
 .obwm-header,
-.obwm-control-row,
+.obwm-header-actions,
+.obwm-composer-toolbar,
+.obwm-toolbar-group,
 .obwm-vault-row,
+.obwm-edit-actions,
 .obwm-memo-actions,
 .obwm-attachment,
-.obwm-checkbox {
+.obwm-checkbox,
+.obwm-button,
+.obwm-submit,
+.obwm-load-more,
+.obwm-status-pill,
+.obwm-meta-pill,
+.obwm-action-button {
   align-items: center;
   display: flex;
 }
 
 .obwm-header {
-  border-bottom: 1px solid var(--background-modifier-border);
   justify-content: space-between;
-  padding-bottom: var(--size-4-2);
+  min-height: 34px;
 }
 
 .obwm-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   min-width: 0;
 }
 
 .obwm-title-group h2 {
+  color: var(--text-normal);
   font-size: var(--font-ui-large);
-  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.15;
   margin: 0;
 }
 
-.obwm-title-group span,
+.obwm-status-pill,
 .obwm-memo-meta,
 .obwm-attachment-meta {
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
 }
 
-.obwm-header-actions,
-.obwm-memo-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--size-4-1);
+.obwm-status-pill {
+  border-radius: 999px;
+  line-height: 1.4;
+  min-width: 0;
 }
 
-.obwm-icon-button {
-  flex: 0 0 32px;
-  height: 32px;
+.obwm-header-actions,
+.obwm-memo-actions {
+  flex-wrap: wrap;
+  gap: var(--size-2-2);
+}
+
+.obwm-icon-button,
+.obwm-action-button {
+  border-radius: 6px;
+  flex: 0 0 30px;
+  height: 30px;
   justify-content: center;
-  width: 32px;
+  width: 30px;
 }
 
 .obwm-icon {
@@ -83,6 +105,7 @@
 }
 
 .obwm-message {
+  background: var(--background-primary);
   color: var(--text-muted);
   padding: var(--size-4-2);
 }
@@ -93,12 +116,20 @@
   color: var(--text-error);
 }
 
+.obwm-empty,
+.obwm-composer,
+.obwm-list-tools,
+.obwm-memo {
+  background: var(--background-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
 .obwm-empty {
   align-items: flex-start;
   display: flex;
   flex-direction: column;
   gap: var(--size-4-2);
-  padding: var(--size-4-3);
+  padding: var(--size-4-4);
 }
 
 .obwm-empty h3 {
@@ -106,67 +137,130 @@
   margin: 0;
 }
 
-.obwm-composer,
-.obwm-list-tools {
-  background: var(--background-secondary);
-  padding: var(--size-4-2);
+.obwm-composer {
+  padding: var(--size-4-3);
+}
+
+.obwm-composer-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
 }
 
 .obwm-compose-textarea,
 .obwm-edit-textarea {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
   box-sizing: border-box;
-  min-height: 128px;
+  color: var(--text-normal);
+  line-height: var(--line-height-normal);
+  min-height: 118px;
+  padding: 0;
   resize: vertical;
   width: 100%;
 }
 
 .obwm-edit-textarea {
-  min-height: 96px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  min-height: 108px;
+  padding: var(--size-4-2);
 }
 
-.obwm-control-row,
-.obwm-vault-row {
+.obwm-compose-textarea:focus,
+.obwm-edit-textarea:focus {
+  box-shadow: none;
+}
+
+.obwm-compose-textarea::placeholder {
+  color: var(--text-faint);
+}
+
+.obwm-composer-toolbar,
+.obwm-edit-actions {
+  border-top: 1px solid var(--background-modifier-border);
   flex-wrap: wrap;
   gap: var(--size-4-2);
-  margin-top: var(--size-4-2);
+  justify-content: space-between;
+  padding-top: var(--size-4-2);
 }
 
-.obwm-control-row select,
+.obwm-toolbar-group {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: var(--size-2-3);
+  min-width: 0;
+}
+
+.obwm-vault-row {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  flex-wrap: nowrap;
+  gap: var(--size-2-3);
+  padding: var(--size-2-2);
+}
+
 .obwm-vault-row input,
 .obwm-filter-grid input,
-.obwm-filter-grid select {
+.obwm-filter-grid select,
+.obwm-visibility-select {
   min-width: 0;
 }
 
 .obwm-vault-row input {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
   flex: 1 1 180px;
+  height: 30px;
+}
+
+.obwm-vault-row input:focus {
+  box-shadow: none;
+}
+
+.obwm-visibility-select {
+  flex: 0 1 auto;
+  height: 32px;
 }
 
 .obwm-button,
 .obwm-submit,
 .obwm-load-more {
-  align-items: center;
-  display: inline-flex;
   gap: var(--size-2-2);
   justify-content: center;
   min-height: 32px;
 }
 
+.obwm-soft-button {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+.obwm-soft-button:hover {
+  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+  color: var(--text-normal);
+}
+
 .obwm-submit {
+  flex: 0 0 auto;
   margin-left: auto;
+  min-width: 86px;
 }
 
 .obwm-attachments {
   display: flex;
   flex-direction: column;
   gap: var(--size-2-3);
-  margin-top: var(--size-4-2);
 }
 
 .obwm-attachment {
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
+  background: var(--background-secondary);
+  border-radius: 8px;
   gap: var(--size-2-3);
   min-height: 34px;
   padding: 0 var(--size-2-3);
@@ -184,15 +278,18 @@
   display: flex;
   flex-direction: column;
   gap: var(--size-4-2);
+  padding: var(--size-4-2);
 }
 
 .obwm-filter-grid {
   display: grid;
   gap: var(--size-4-2);
-  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.45fr);
+  grid-template-columns: minmax(0, 1fr) minmax(120px, 0.42fr);
 }
 
 .obwm-checkbox {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
   gap: var(--size-2-2);
 }
 
@@ -203,22 +300,53 @@
 }
 
 .obwm-memo {
-  background: var(--background-primary);
-  padding: var(--size-4-2);
+  padding: var(--size-4-3);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.obwm-memo:hover,
+.obwm-memo:focus-within {
+  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
 }
 
 .obwm-archived {
-  opacity: 0.72;
+  opacity: 0.68;
 }
 
 .obwm-memo-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--size-4-2);
-  margin-bottom: var(--size-2-3);
+  gap: var(--size-2-3);
+  margin-bottom: var(--size-4-2);
+}
+
+.obwm-meta-pill {
+  background: var(--background-secondary);
+  border-radius: 999px;
+  gap: 4px;
+  line-height: 1.4;
+  min-height: 20px;
+  padding: 0 7px;
+}
+
+.obwm-pinned-pill {
+  color: var(--text-accent);
+}
+
+.obwm-pinned-pill .obwm-icon,
+.obwm-pinned-pill .obwm-icon svg {
+  height: 13px;
+  width: 13px;
 }
 
 .obwm-memo-content {
+  color: var(--text-normal);
+  font-size: var(--font-ui-medium);
   line-height: var(--line-height-normal);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
@@ -233,27 +361,52 @@
 
 .obwm-resource-list span {
   background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
   border-radius: 999px;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
   max-width: 100%;
   overflow: hidden;
-  padding: 2px 8px;
+  padding: 3px 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .obwm-memo-actions {
-  margin-top: var(--size-4-2);
+  border-top: 1px solid var(--background-modifier-border);
+  justify-content: flex-end;
+  margin-top: var(--size-4-3);
+  padding-top: var(--size-2-3);
+}
+
+.obwm-action-button {
+  color: var(--text-muted);
+}
+
+.obwm-action-button:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
 }
 
 .obwm-danger {
   color: var(--text-error);
 }
 
+.obwm-danger:hover {
+  background: rgba(var(--color-red-rgb), 0.08);
+  color: var(--text-error);
+}
+
 .obwm-load-more {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  color: var(--text-muted);
   width: 100%;
+}
+
+.obwm-load-more:hover {
+  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+  color: var(--text-normal);
 }
 
 @media (max-width: 480px) {
@@ -261,8 +414,18 @@
     grid-template-columns: 1fr;
   }
 
+  .obwm-composer-toolbar,
+  .obwm-edit-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .obwm-submit {
     margin-left: 0;
     width: 100%;
+  }
+
+  .obwm-vault-row {
+    flex-wrap: wrap;
   }
 }
