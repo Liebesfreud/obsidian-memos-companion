@@ -3,8 +3,19 @@
 }
 
 .obwm-panel {
+  --obwm-radius: 8px;
+  --obwm-radius-sm: 6px;
+  --obwm-border: var(--background-modifier-border);
+  --obwm-border-hover: var(--background-modifier-border-hover, var(--background-modifier-border));
+  --obwm-card: var(--background-primary);
+  --obwm-muted: var(--background-secondary);
+  --obwm-muted-hover: var(--background-modifier-hover);
+  --obwm-ring: rgba(var(--color-accent-rgb), 0.28);
+  --obwm-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 28px rgba(0, 0, 0, 0.06);
+
   background: var(--background-secondary);
   box-sizing: border-box;
+  color: var(--text-normal);
   display: flex;
   flex-direction: column;
   gap: var(--size-4-3);
@@ -14,8 +25,17 @@
   padding: var(--size-4-3);
 }
 
+.obwm-panel *,
+.obwm-panel *::before,
+.obwm-panel *::after {
+  box-sizing: border-box;
+}
+
 .obwm-header,
+.obwm-brand,
 .obwm-header-actions,
+.obwm-card-heading,
+.obwm-card-title,
 .obwm-composer-toolbar,
 .obwm-toolbar-group,
 .obwm-vault-row,
@@ -23,6 +43,8 @@
 .obwm-memo-topline,
 .obwm-attachment,
 .obwm-checkbox,
+.obwm-filter-footer,
+.obwm-list-tools-row,
 .obwm-button,
 .obwm-submit,
 .obwm-load-more,
@@ -30,20 +52,47 @@
 .obwm-meta-pill,
 .obwm-action-button,
 .obwm-action-menu,
-.obwm-menu-item {
+.obwm-menu-item,
+.obwm-message,
+.obwm-search-field,
+.obwm-resource-pill {
   align-items: center;
   display: flex;
 }
 
 .obwm-header {
   justify-content: space-between;
-  min-height: 34px;
+  min-height: 40px;
+}
+
+.obwm-brand {
+  gap: var(--size-2-3);
+  min-width: 0;
+}
+
+.obwm-brand-icon,
+.obwm-empty-icon {
+  align-items: center;
+  background: var(--interactive-accent);
+  border-radius: var(--obwm-radius);
+  color: var(--text-on-accent);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.obwm-brand-icon svg,
+.obwm-empty-icon svg {
+  height: 17px;
+  width: 17px;
 }
 
 .obwm-title-group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -52,7 +101,7 @@
   font-size: var(--font-ui-large);
   font-weight: 650;
   letter-spacing: 0;
-  line-height: 1.15;
+  line-height: 1.1;
   margin: 0;
 }
 
@@ -64,28 +113,58 @@
 }
 
 .obwm-status-pill {
-  border-radius: 999px;
-  line-height: 1.4;
+  gap: 6px;
+  line-height: 1.3;
   min-width: 0;
 }
 
+.obwm-status-dot {
+  background: var(--color-green);
+  border-radius: 999px;
+  flex: 0 0 6px;
+  height: 6px;
+  opacity: 0.8;
+  width: 6px;
+}
+
+.obwm-status-dot-loading {
+  background: var(--text-accent);
+  box-shadow: 0 0 0 4px rgba(var(--color-accent-rgb), 0.12);
+}
+
 .obwm-header-actions {
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: var(--size-2-2);
 }
 
 .obwm-icon-button,
 .obwm-action-button {
-  border-radius: 6px;
-  flex: 0 0 30px;
-  height: 30px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--obwm-radius-sm);
+  color: var(--text-muted);
+  flex: 0 0 32px;
+  height: 32px;
   justify-content: center;
-  width: 30px;
+  padding: 0;
+  width: 32px;
+}
+
+.obwm-icon-button:hover,
+.obwm-icon-button:focus-visible,
+.obwm-action-button:hover,
+.obwm-action-button:focus-visible,
+.obwm-more-button-active {
+  background: var(--obwm-muted-hover);
+  border-color: var(--obwm-border);
+  color: var(--text-normal);
 }
 
 .obwm-icon {
   align-items: center;
   display: inline-flex;
+  flex: 0 0 auto;
   height: 16px;
   justify-content: center;
   width: 16px;
@@ -96,24 +175,30 @@
   width: 16px;
 }
 
+.obwm-spin svg {
+  animation: obwm-spin 900ms linear infinite;
+}
+
 .obwm-message,
 .obwm-empty,
 .obwm-composer,
 .obwm-list-tools,
 .obwm-memo {
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  background: var(--obwm-card);
+  border: 1px solid var(--obwm-border);
+  border-radius: var(--obwm-radius);
 }
 
 .obwm-message {
-  background: var(--background-primary);
   color: var(--text-muted);
-  padding: var(--size-4-2);
+  gap: var(--size-2-3);
+  line-height: var(--line-height-tight);
+  padding: var(--size-4-2) var(--size-4-3);
 }
 
 .obwm-message-error {
   background: rgba(var(--color-red-rgb), 0.08);
-  border-color: rgba(var(--color-red-rgb), 0.32);
+  border-color: rgba(var(--color-red-rgb), 0.28);
   color: var(--text-error);
 }
 
@@ -121,7 +206,6 @@
 .obwm-composer,
 .obwm-list-tools,
 .obwm-memo {
-  background: var(--background-primary);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
@@ -130,49 +214,71 @@
   display: flex;
   flex-direction: column;
   gap: var(--size-4-2);
-  padding: var(--size-4-4);
+  padding: var(--size-4-5);
 }
 
 .obwm-empty h3 {
-  font-size: var(--font-ui-medium);
+  font-size: var(--font-ui-large);
+  font-weight: 650;
   margin: 0;
 }
 
 .obwm-composer {
-  padding: var(--size-4-3);
+  overflow: hidden;
 }
 
 .obwm-composer-form {
   display: flex;
   flex-direction: column;
   gap: var(--size-4-2);
+  padding: var(--size-4-3);
+}
+
+.obwm-card-heading {
+  justify-content: space-between;
+  min-height: 24px;
+}
+
+.obwm-card-title {
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+  gap: var(--size-2-2);
 }
 
 .obwm-compose-textarea,
 .obwm-edit-textarea {
-  background: transparent;
-  border: 0;
+  background: var(--obwm-muted);
+  border: 1px solid var(--obwm-border);
+  border-radius: var(--obwm-radius);
   box-shadow: none;
-  box-sizing: border-box;
   color: var(--text-normal);
   line-height: var(--line-height-normal);
-  min-height: 118px;
-  padding: 0;
+  min-height: 126px;
+  padding: var(--size-4-2);
   resize: vertical;
   width: 100%;
 }
 
 .obwm-edit-textarea {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  min-height: 108px;
-  padding: var(--size-4-2);
+  min-height: 112px;
 }
 
 .obwm-compose-textarea:focus,
-.obwm-edit-textarea:focus {
-  box-shadow: none;
+.obwm-edit-textarea:focus,
+.obwm-vault-row:focus-within,
+.obwm-search-field:focus-within,
+.obwm-filter-grid select:focus,
+.obwm-visibility-select:focus,
+.obwm-button:focus-visible,
+.obwm-submit:focus-visible,
+.obwm-load-more:focus-visible,
+.obwm-icon-button:focus-visible,
+.obwm-action-button:focus-visible,
+.obwm-menu-item:focus-visible {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--obwm-ring);
+  outline: none;
 }
 
 .obwm-compose-textarea::placeholder {
@@ -181,7 +287,7 @@
 
 .obwm-composer-toolbar,
 .obwm-edit-actions {
-  border-top: 1px solid var(--background-modifier-border);
+  border-top: 1px solid var(--obwm-border);
   flex-wrap: wrap;
   gap: var(--size-4-2);
   justify-content: space-between;
@@ -195,62 +301,109 @@
   min-width: 0;
 }
 
-.obwm-vault-row {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  flex-wrap: nowrap;
+.obwm-vault-row,
+.obwm-search-field {
+  background: var(--obwm-muted);
+  border: 1px solid var(--obwm-border);
+  border-radius: var(--obwm-radius);
+  color: var(--text-muted);
   gap: var(--size-2-3);
+}
+
+.obwm-vault-row {
+  flex-wrap: nowrap;
   padding: var(--size-2-2);
 }
 
+.obwm-vault-icon {
+  margin-left: 4px;
+}
+
 .obwm-vault-row input,
-.obwm-filter-grid input,
+.obwm-search-field input,
 .obwm-filter-grid select,
 .obwm-visibility-select {
   min-width: 0;
 }
 
-.obwm-vault-row input {
+.obwm-vault-row input,
+.obwm-search-field input {
   background: transparent;
   border: 0;
   box-shadow: none;
-  flex: 1 1 180px;
-  height: 30px;
+  color: var(--text-normal);
+  flex: 1 1 auto;
+  height: 32px;
+  padding: 0;
 }
 
-.obwm-vault-row input:focus {
+.obwm-vault-row input:focus,
+.obwm-search-field input:focus {
   box-shadow: none;
+  outline: none;
+}
+
+.obwm-search-field {
+  padding: 0 var(--size-4-2);
+}
+
+.obwm-filter-grid select,
+.obwm-visibility-select {
+  background-color: var(--obwm-muted);
+  border: 1px solid var(--obwm-border);
+  border-radius: var(--obwm-radius);
+  color: var(--text-normal);
+  height: 34px;
 }
 
 .obwm-visibility-select {
   flex: 0 1 auto;
-  height: 32px;
 }
 
 .obwm-button,
 .obwm-submit,
 .obwm-load-more {
+  border-radius: var(--obwm-radius);
+  font-size: var(--font-ui-small);
+  font-weight: 500;
   gap: var(--size-2-2);
   justify-content: center;
-  min-height: 32px;
+  min-height: 34px;
+  padding: 0 var(--size-4-2);
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease;
 }
 
 .obwm-soft-button {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  color: var(--text-muted);
+  background: var(--obwm-card);
+  border: 1px solid var(--obwm-border);
+  color: var(--text-normal);
 }
 
 .obwm-soft-button:hover {
-  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+  background: var(--obwm-muted-hover);
+  border-color: var(--obwm-border-hover);
+}
+
+.obwm-ghost-button {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+}
+
+.obwm-ghost-button:hover:not(:disabled) {
+  background: var(--obwm-muted-hover);
+  border-color: var(--obwm-border);
   color: var(--text-normal);
 }
 
 .obwm-submit {
   flex: 0 0 auto;
   margin-left: auto;
-  min-width: 86px;
+  min-width: 92px;
 }
 
 .obwm-attachments {
@@ -260,11 +413,16 @@
 }
 
 .obwm-attachment {
-  background: var(--background-secondary);
-  border-radius: 8px;
+  background: var(--obwm-muted);
+  border: 1px solid var(--obwm-border);
+  border-radius: var(--obwm-radius);
   gap: var(--size-2-3);
-  min-height: 34px;
+  min-height: 38px;
   padding: 0 var(--size-2-3);
+}
+
+.obwm-attachment-icon {
+  color: var(--text-muted);
 }
 
 .obwm-attachment-name {
@@ -282,16 +440,45 @@
   padding: var(--size-4-2);
 }
 
+.obwm-list-tools-row {
+  align-items: stretch;
+  gap: var(--size-4-2);
+}
+
 .obwm-filter-grid {
   display: grid;
+  flex: 1 1 auto;
   gap: var(--size-4-2);
   grid-template-columns: minmax(0, 1fr) minmax(120px, 0.42fr);
+  min-width: 0;
+}
+
+.obwm-clear-filters {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.obwm-filter-footer {
+  gap: var(--size-4-2);
+  justify-content: space-between;
+  min-height: 22px;
+}
+
+.obwm-filter-count {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
 }
 
 .obwm-checkbox {
   color: var(--text-muted);
   font-size: var(--font-ui-small);
   gap: var(--size-2-2);
+  width: fit-content;
+}
+
+.obwm-checkbox input {
+  margin: 0;
 }
 
 .obwm-list {
@@ -312,8 +499,8 @@
 
 .obwm-memo:hover,
 .obwm-memo:focus-within {
-  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-color: var(--obwm-border-hover);
+  box-shadow: var(--obwm-shadow);
   transform: translateY(-1px);
   z-index: 1;
 }
@@ -344,15 +531,18 @@
 }
 
 .obwm-meta-pill {
-  background: var(--background-secondary);
+  background: var(--obwm-muted);
+  border: 1px solid var(--obwm-border);
   border-radius: 999px;
   gap: 4px;
-  line-height: 1.4;
-  min-height: 20px;
-  padding: 0 7px;
+  line-height: 1.35;
+  min-height: 22px;
+  padding: 0 8px;
 }
 
 .obwm-pinned-pill {
+  background: rgba(var(--color-accent-rgb), 0.08);
+  border-color: rgba(var(--color-accent-rgb), 0.22);
   color: var(--text-accent);
 }
 
@@ -378,12 +568,19 @@
 }
 
 .obwm-image-link {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  background: var(--obwm-muted);
+  border: 1px solid var(--obwm-border);
+  border-radius: var(--obwm-radius);
   display: block;
   min-height: 120px;
   overflow: hidden;
+}
+
+.obwm-image-link:hover,
+.obwm-image-link:focus-visible {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--obwm-ring);
+  outline: none;
 }
 
 .obwm-image-link img {
@@ -401,25 +598,44 @@
   margin-top: var(--size-4-2);
 }
 
-.obwm-resource-list span {
-  background: var(--background-secondary);
+.obwm-resource-pill {
+  background: var(--obwm-muted);
+  border: 1px solid var(--obwm-border);
   border-radius: 999px;
   color: var(--text-muted);
   font-size: var(--font-ui-smaller);
+  gap: 5px;
   max-width: 100%;
+  min-height: 24px;
   overflow: hidden;
-  padding: 3px 8px;
+  padding: 0 8px;
+  text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.obwm-resource-pill:hover,
+.obwm-resource-pill:focus-visible {
+  background: var(--obwm-muted-hover);
+  border-color: var(--obwm-border-hover);
+  color: var(--text-normal);
+}
+
+.obwm-resource-list .obwm-icon,
+.obwm-resource-list .obwm-icon svg {
+  height: 13px;
+  width: 13px;
+}
+
 .obwm-comments {
-  border-top: 1px solid var(--background-modifier-border);
+  background: var(--obwm-muted);
+  border: 1px solid var(--obwm-border);
+  border-radius: var(--obwm-radius);
   display: flex;
   flex-direction: column;
   gap: var(--size-2-3);
   margin-top: var(--size-4-3);
-  padding-top: var(--size-4-2);
+  padding: var(--size-4-2);
 }
 
 .obwm-comments-title,
@@ -433,7 +649,7 @@
 }
 
 .obwm-comment {
-  border-left: 2px solid var(--background-modifier-border);
+  border-left: 2px solid var(--obwm-border);
   padding-left: var(--size-4-2);
 }
 
@@ -451,42 +667,29 @@
   z-index: 2;
 }
 
-.obwm-action-button {
-  color: var(--text-muted);
-}
-
-.obwm-action-button:hover {
-  background: var(--background-modifier-hover);
-  color: var(--text-normal);
-}
-
-.obwm-more-button-active {
-  background: var(--background-modifier-hover);
-  color: var(--text-normal);
-}
-
 .obwm-action-menu {
   align-items: stretch;
   background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--obwm-border);
+  border-radius: var(--obwm-radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
   flex-direction: column;
   gap: 2px;
-  min-width: 148px;
+  min-width: 156px;
   padding: 4px;
   position: absolute;
   right: 0;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   z-index: 30;
 }
 
 .obwm-menu-item {
   background: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--obwm-radius-sm);
   box-shadow: none;
   color: var(--text-normal);
+  font-size: var(--font-ui-small);
   gap: var(--size-2-3);
   justify-content: flex-start;
   min-height: 34px;
@@ -497,7 +700,7 @@
 
 .obwm-menu-item:hover,
 .obwm-menu-item:focus-visible {
-  background: var(--background-modifier-hover);
+  background: var(--obwm-muted-hover);
 }
 
 .obwm-menu-item:disabled {
@@ -520,35 +723,59 @@
 }
 
 .obwm-load-more {
-  background: var(--background-primary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
+  background: var(--obwm-card);
+  border: 1px solid var(--obwm-border);
   color: var(--text-muted);
   width: 100%;
 }
 
 .obwm-load-more:hover {
-  border-color: var(--background-modifier-border-hover, var(--background-modifier-border));
+  background: var(--obwm-muted-hover);
+  border-color: var(--obwm-border-hover);
   color: var(--text-normal);
 }
 
 @media (max-width: 480px) {
+  .obwm-panel {
+    padding: var(--size-4-2);
+  }
+
+  .obwm-header {
+    align-items: flex-start;
+    gap: var(--size-4-2);
+  }
+
   .obwm-filter-grid {
     grid-template-columns: 1fr;
   }
 
+  .obwm-list-tools-row,
   .obwm-composer-toolbar,
   .obwm-edit-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .obwm-submit {
+  .obwm-toolbar-group {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .obwm-submit,
+  .obwm-visibility-select,
+  .obwm-button,
+  .obwm-clear-filters {
     margin-left: 0;
     width: 100%;
   }
 
   .obwm-vault-row {
     flex-wrap: wrap;
+  }
+}
+
+@keyframes obwm-spin {
+  to {
+    transform: rotate(360deg);
   }
 }

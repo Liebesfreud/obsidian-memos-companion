@@ -50,6 +50,7 @@ export class MemosSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.memosUrl = value.trim();
             await this.plugin.saveSettings();
+            this.plugin.notifySettingsChanged();
           });
       });
 
@@ -64,6 +65,7 @@ export class MemosSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.accessToken = value.trim();
             await this.plugin.saveSettings();
+            this.plugin.notifySettingsChanged();
           });
       });
 
@@ -79,6 +81,7 @@ export class MemosSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.defaultVisibility = value as MemoVisibility;
             await this.plugin.saveSettings();
+            this.plugin.notifySettingsChanged();
           });
       });
 
@@ -98,6 +101,7 @@ export class MemosSettingTab extends PluginSettingTab {
             if (Number.isFinite(pageSize)) {
               this.plugin.settings.pageSize = Math.min(100, Math.max(5, pageSize));
               await this.plugin.saveSettings();
+              this.plugin.notifySettingsChanged();
             }
           });
       });

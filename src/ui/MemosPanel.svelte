@@ -55,6 +55,7 @@
 
     return matchesSearch && matchesTag;
   });
+  $: hasActiveFilters = Boolean(search.trim() || selectedTag || includeArchived);
 
   onMount(() => {
     window.addEventListener("click", closeActionMenu);
@@ -105,6 +106,18 @@
 
   function toggleActionMenu(memo: Memo): void {
     openActionMenuName = openActionMenuName === memo.name ? null : memo.name;
+  }
+
+  function clearFilters(): void {
+    const shouldRefresh = includeArchived;
+
+    search = "";
+    selectedTag = "";
+    includeArchived = false;
+
+    if (shouldRefresh) {
+      void refresh();
+    }
   }
 
   async function refresh(): Promise<void> {
@@ -409,13 +422,12 @@
     const latestSettings = readSettings();
 
     currentSettings = latestSettings;
+    visibility = latestSettings.defaultVisibility;
 
     if (!refreshMemos) {
       status = "";
       return;
     }
-
-    visibility = latestSettings.defaultVisibility;
 
     if (hasConnection(latestSettings)) {
       void refresh();
@@ -555,6 +567,24 @@
     return resource.previewUrl ?? resource.externalLink ?? "";
   }
 
+  function resourceIcon(resource: MemoResource): string {
+    const type = String(resource.type ?? "");
+
+    if (type.startsWith("audio/")) {
+      return "file-audio";
+    }
+
+    if (type.startsWith("video/")) {
+      return "file-video";
+    }
+
+    if (type === "application/pdf" || /\.pdf$/i.test(resourceLabel(resource))) {
+      return "file-text";
+    }
+
+    return "paperclip";
+  }
+
   function guessMimeType(name: string): string {
     const extension = name.split(".").pop()?.toLowerCase() ?? "";
     const map: Record<string, string> = {
@@ -578,9 +608,15 @@
 
 <div class="obwm-panel" on:paste={handlePaste}>
   <header class="obwm-header">
-    <div class="obwm-title-group">
-      <h2>Memos</h2>
-      <span class="obwm-status-pill">{status || messages.panel.ready}</span>
+    <div class="obwm-brand">
+      <span class="obwm-brand-icon" use:icon={"sticky-note"}></span>
+      <div class="obwm-title-group">
+        <h2>Memos</h2>
+        <span class="obwm-status-pill">
+          <span class:obwm-status-dot-loading={loading} class="obwm-status-dot"></span>
+          {status || messages.panel.ready}
+        </span>
+      </div>
     </div>
 
     <div class="obwm-header-actions">
@@ -616,13 +652,18 @@
   </header>
 
   {#if error}
-    <div class="obwm-message obwm-message-error">{error}</div>
+    <div class="obwm-message obwm-message-error">
+      <span class="obwm-icon" use:icon={"circle-alert"}></span>
+      <span>{error}</span>
+    </div>
   {/if}
 
   {#if !isConfigured}
     <section class="obwm-empty">
+      <span class="obwm-empty-icon" use:icon={"plug-zap"}></span>
       <h3>{messages.panel.connectMemos}</h3>
-      <button class="mod-cta" type="button" on:click={() => host.openSettings()}>
+      <button class="mod-cta obwm-submit" type="button" on:click={() => host.openSettings()}>
+        <span class="obwm-icon" use:icon={"settings"}></span>
         {messages.panel.openSettings}
       </button>
     </section>
@@ -635,6 +676,13 @@
       on:drop={handleDrop}
     >
       <form class="obwm-composer-form" on:submit|preventDefault={publishMemo}>
+        <div class="obwm-card-heading">
+          <div class="obwm-card-title">
+            <span class="obwm-icon" use:icon={"square-pen"}></span>
+            <span>{messages.panel.memoComposer}</span>
+          </div>
+        </div>
+
         <textarea
           bind:value={content}
           class="obwm-compose-textarea"
@@ -677,6 +725,7 @@
         </div>
 
         <div class="obwm-vault-row">
+          <span class="obwm-icon obwm-vault-icon" use:icon={"folder-up"}></span>
           <input
             bind:value={vaultPath}
             disabled={saving}
@@ -693,6 +742,7 @@
           <div class="obwm-attachments">
             {#each attachments as attachment, index}
               <div class="obwm-attachment">
+                <span class="obwm-icon obwm-attachment-icon" use:icon={"file"}></span>
                 <span class="obwm-attachment-name">{attachment.name}</span>
                 <span class="obwm-attachment-meta">
                   {uploadSourceLabel(currentSettings.language, attachment.source)}
@@ -715,28 +765,53 @@
     </div>
 
     <section class="obwm-list-tools">
-      <div class="obwm-filter-grid">
-        <input bind:value={search} placeholder={messages.panel.search} type="search" />
+      <div class="obwm-list-tools-row">
+        <div class="obwm-filter-grid">
+          <label class="obwm-search-field">
+            <span class="obwm-icon" use:icon={"search"}></span>
+            <input aria-label={messages.panel.search} bind:value={search} placeholder={messages.panel.search} type="search" />
+          </label>
 
-        <select bind:value={selectedTag}>
-          <option value="">{messages.panel.allTags}</option>
-          {#each tags as tag}
-            <option value={tag}>#{tag}</option>
-          {/each}
-        </select>
+          <select aria-label={messages.panel.allTags} class="obwm-tag-select" bind:value={selectedTag}>
+            <option value="">{messages.panel.allTags}</option>
+            {#each tags as tag}
+              <option value={tag}>#{tag}</option>
+            {/each}
+          </select>
+        </div>
+
+        <button
+          class="obwm-button obwm-ghost-button obwm-clear-filters"
+          disabled={!hasActiveFilters || loading}
+          type="button"
+          on:click={clearFilters}
+        >
+          <span class="obwm-icon" use:icon={"eraser"}></span>
+          {messages.panel.clearFilters}
+        </button>
       </div>
 
-      <label class="obwm-checkbox">
-        <input bind:checked={includeArchived} type="checkbox" on:change={refresh} />
-        <span>{messages.panel.archived}</span>
-      </label>
+      <div class="obwm-filter-footer">
+        <label class="obwm-checkbox">
+          <input bind:checked={includeArchived} type="checkbox" on:change={refresh} />
+          <span>{messages.panel.archived}</span>
+        </label>
+
+        <span class="obwm-filter-count">{filteredMemos.length} / {memos.length}</span>
+      </div>
     </section>
 
     <section class="obwm-list">
       {#if loading && memos.length === 0}
-        <div class="obwm-message">{messages.panel.loadingMemos}</div>
+        <div class="obwm-message">
+          <span class="obwm-icon obwm-spin" use:icon={"loader-circle"}></span>
+          <span>{messages.panel.loadingMemos}</span>
+        </div>
       {:else if filteredMemos.length === 0}
-        <div class="obwm-message">{messages.panel.noMemosFound}</div>
+        <div class="obwm-message">
+          <span class="obwm-icon" use:icon={"search-x"}></span>
+          <span>{messages.panel.noMemosFound}</span>
+        </div>
       {:else}
         {#each filteredMemos as memo (memoKey(memo))}
           <article
@@ -829,17 +904,23 @@
                 </select>
 
                 <button
-                  class="mod-cta"
+                  class="mod-cta obwm-submit"
                   disabled={savingEditName === memo.name}
                   type="button"
                   on:click={() => saveEdit(memo)}
                 >
+                  <span class="obwm-icon" use:icon={"save"}></span>
                   {messages.panel.save}
                 </button>
-                <button class="obwm-button obwm-soft-button" type="button" on:click={cancelEdit}>{messages.panel.cancel}</button>
+                <button class="obwm-button obwm-soft-button" type="button" on:click={cancelEdit}>
+                  <span class="obwm-icon" use:icon={"x"}></span>
+                  {messages.panel.cancel}
+                </button>
               </div>
             {:else}
-              <div class="obwm-memo-content">{memo.content}</div>
+              {#if memo.content.trim()}
+                <div class="obwm-memo-content">{memo.content}</div>
+              {/if}
 
               {#if imageResources(memo).length}
                 <div class="obwm-image-grid">
@@ -863,7 +944,22 @@
               {#if attachmentResources(memo).length}
                 <div class="obwm-resource-list">
                   {#each attachmentResources(memo) as resource}
-                    <span>{resourceLabel(resource)}</span>
+                    {#if resourcePreviewUrl(resource)}
+                      <a
+                        class="obwm-resource-pill"
+                        href={resourcePreviewUrl(resource)}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        <span class="obwm-icon" use:icon={resourceIcon(resource)}></span>
+                        {resourceLabel(resource)}
+                      </a>
+                    {:else}
+                      <span class="obwm-resource-pill">
+                        <span class="obwm-icon" use:icon={resourceIcon(resource)}></span>
+                        {resourceLabel(resource)}
+                      </span>
+                    {/if}
                   {/each}
                 </div>
               {/if}
