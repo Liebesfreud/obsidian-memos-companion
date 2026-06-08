@@ -77,13 +77,21 @@
   });
 
   function icon(node: HTMLElement, name: string): { update(nextName: string): void } {
-    setIcon(node, name);
+    setSafeIcon(node, name);
 
     return {
       update(nextName: string): void {
-        setIcon(node, nextName);
+        setSafeIcon(node, nextName);
       }
     };
+  }
+
+  function setSafeIcon(node: HTMLElement, name: string): void {
+    try {
+      setIcon(node, name);
+    } catch {
+      node.empty();
+    }
   }
 
   function readSettings(): ObWithMemosSettings {
@@ -571,11 +579,11 @@
     const type = String(resource.type ?? "");
 
     if (type.startsWith("audio/")) {
-      return "file-audio";
+      return "file";
     }
 
     if (type.startsWith("video/")) {
-      return "file-video";
+      return "file";
     }
 
     if (type === "application/pdf" || /\.pdf$/i.test(resourceLabel(resource))) {
@@ -653,14 +661,14 @@
 
   {#if error}
     <div class="obwm-message obwm-message-error">
-      <span class="obwm-icon" use:icon={"circle-alert"}></span>
+      <span class="obwm-icon" use:icon={"alert-circle"}></span>
       <span>{error}</span>
     </div>
   {/if}
 
   {#if !isConfigured}
     <section class="obwm-empty">
-      <span class="obwm-empty-icon" use:icon={"plug-zap"}></span>
+      <span class="obwm-empty-icon" use:icon={"plug"}></span>
       <h3>{messages.panel.connectMemos}</h3>
       <button class="mod-cta obwm-submit" type="button" on:click={() => host.openSettings()}>
         <span class="obwm-icon" use:icon={"settings"}></span>
@@ -678,7 +686,7 @@
       <form class="obwm-composer-form" on:submit|preventDefault={publishMemo}>
         <div class="obwm-card-heading">
           <div class="obwm-card-title">
-            <span class="obwm-icon" use:icon={"square-pen"}></span>
+            <span class="obwm-icon" use:icon={"pencil"}></span>
             <span>{messages.panel.memoComposer}</span>
           </div>
         </div>
@@ -725,7 +733,7 @@
         </div>
 
         <div class="obwm-vault-row">
-          <span class="obwm-icon obwm-vault-icon" use:icon={"folder-up"}></span>
+          <span class="obwm-icon obwm-vault-icon" use:icon={"folder"}></span>
           <input
             bind:value={vaultPath}
             disabled={saving}
@@ -804,12 +812,12 @@
     <section class="obwm-list">
       {#if loading && memos.length === 0}
         <div class="obwm-message">
-          <span class="obwm-icon obwm-spin" use:icon={"loader-circle"}></span>
+          <span class="obwm-icon obwm-spin" use:icon={"loader"}></span>
           <span>{messages.panel.loadingMemos}</span>
         </div>
       {:else if filteredMemos.length === 0}
         <div class="obwm-message">
-          <span class="obwm-icon" use:icon={"search-x"}></span>
+          <span class="obwm-icon" use:icon={"search"}></span>
           <span>{messages.panel.noMemosFound}</span>
         </div>
       {:else}
