@@ -3,64 +3,66 @@
 [![CI](https://github.com/Liebesfreud/obsidian-memos-companion/actions/workflows/ci.yml/badge.svg)](https://github.com/Liebesfreud/obsidian-memos-companion/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Memos Companion is an Obsidian desktop plugin for writing and managing a self-hosted [Memos](https://www.usememos.com/) instance from a sidebar.
+Memos Companion 是一个 Obsidian 桌面端插件，可以在侧边栏中连接并管理自托管的 [Memos](https://www.usememos.com/) 实例。
 
-## Features
+> English: Memos Companion is an Obsidian desktop plugin for writing and managing a self-hosted Memos instance from a sidebar.
 
-- Open a Memos sidebar from the ribbon or command palette.
-- Configure Memos base URL, access token, default visibility, page size, and language.
-- Create, browse, search, edit, delete, pin, archive, and restore memos.
-- Upload attachments from file picker, paste, drag and drop, or an Obsidian vault path.
-- Use Obsidian `requestUrl`, so desktop requests are not blocked by browser CORS.
-- Run as a desktop-only plugin for self-hosted Memos workflows.
+## 功能特性
 
-## Requirements
+- 通过功能区图标或命令面板打开 Memos 侧边栏。
+- 配置 Memos 地址、访问令牌、默认可见性、分页数量和界面语言。
+- 创建、浏览、搜索、编辑、删除、置顶、归档和恢复 memo。
+- 支持通过文件选择器、粘贴、拖拽或 Obsidian 仓库路径上传附件。
+- 使用 Obsidian `requestUrl` 发起请求，桌面端不会受浏览器 CORS 限制影响。
+- 面向自托管 Memos 工作流，当前为桌面端专用插件。
 
-- Obsidian `1.5.0` or newer.
-- A self-hosted Memos server with API access.
-- A Memos access token.
+## 使用要求
 
-## Installation
+- Obsidian `1.5.0` 或更高版本。
+- 一个可访问 API 的自托管 Memos 服务。
+- 一个 Memos 访问令牌。
 
-### From GitHub releases
+## 安装方式
 
-1. Download `manifest.json`, `main.js`, and `styles.css` from the latest release.
-2. Create this folder in your vault if it does not exist:
+### 从 GitHub Releases 安装
+
+1. 打开最新 Release，下载 `manifest.json`、`main.js` 和 `styles.css`。
+2. 在你的 Obsidian 仓库中创建插件目录：
 
    ```text
-   <vault>/.obsidian/plugins/memos-companion
+   <你的仓库>/.obsidian/plugins/memos-companion
    ```
 
-3. Place the downloaded files in that folder.
-4. Restart Obsidian or reload community plugins.
-5. Enable **Memos Companion** in Obsidian settings.
+3. 将下载的三个文件放入该目录。
+4. 重启 Obsidian，或重新加载社区插件。
+5. 在 Obsidian 设置中启用 **Memos Companion**。
 
-### From source
+### 从源码构建
 
 ```bash
 npm install
 npm run build
 ```
 
-Then copy or symlink this repository into:
+然后将本仓库复制或软链接到：
 
 ```text
-<vault>/.obsidian/plugins/memos-companion
+<你的仓库>/.obsidian/plugins/memos-companion
 ```
 
-## Configuration
+## 配置说明
 
-Open **Settings → Community plugins → Memos Companion** and set:
+打开 **设置 → 第三方插件 → Memos Companion**，填写以下配置：
 
-- **Memos URL**: the base URL of your Memos instance, for example `https://memos.example.com`.
-- **Access token**: your Memos API token.
-- **Default visibility**: the visibility used when creating new memos.
-- **Page size**: the number of memos to fetch per page.
-- **Language**: plugin interface language.
+- **Memos URL**：Memos 实例的基础地址，例如 `https://memos.example.com`。
+- **Access token**：Memos API 访问令牌。
+- **Default visibility**：创建新 memo 时使用的默认可见性。
+- **Page size**：每页拉取的 memo 数量。
+- **Language**：插件界面语言。
 
-Do not commit Obsidian plugin data such as `data.json`; it may contain your access token.
+请不要提交 Obsidian 插件数据文件，例如 `data.json`，其中可能包含你的访问令牌。
 
-## Development
+## 开发
 
 ```bash
 npm install
@@ -68,41 +70,41 @@ npm run check
 npm run build
 ```
 
-Useful files:
+主要文件：
 
-- `src/main.ts`: plugin entry point.
-- `src/memos-client.ts`: Memos API client.
-- `src/ui/MemosPanel.svelte`: sidebar UI.
-- `manifest.json`: Obsidian plugin manifest.
-- `versions.json`: Obsidian community plugin compatibility map.
+- `src/main.ts`：插件入口。
+- `src/memos-client.ts`：Memos API 客户端。
+- `src/ui/MemosPanel.svelte`：侧边栏界面。
+- `manifest.json`：Obsidian 插件清单。
+- `versions.json`：Obsidian 社区插件兼容版本映射。
 
-## Release checklist
+## 发布清单
 
-1. Update `package.json`, `manifest.json`, and `versions.json` with the new version.
-2. Update `CHANGELOG.md`.
-3. Run `npm run check` and `npm run build`.
-4. Commit the changes.
-5. Create and push a tag, for example:
+1. 更新 `package.json`、`manifest.json` 和 `versions.json` 中的版本号。
+2. 更新 `CHANGELOG.md`。
+3. 运行 `npm run check` 和 `npm run build`。
+4. 提交改动。
+5. 创建并推送 tag，例如：
 
    ```bash
    git tag v0.1.0
    git push origin v0.1.0
    ```
 
-The release workflow builds the plugin and uploads `manifest.json`, `main.js`, `styles.css`, and a zip archive to GitHub Releases.
+Release workflow 会自动构建插件，并上传 `manifest.json`、`main.js`、`styles.css` 和 zip 压缩包到 GitHub Releases。
 
-## Compatibility notes
+## 兼容性说明
 
-This plugin targets the latest Memos v1 API. Resource upload includes fallback endpoints for common Memos API shapes, but attachment behavior should be verified against your exact self-hosted version.
+本插件面向较新的 Memos v1 API。附件上传实现包含对常见 Memos API 形态的 fallback，但不同自托管版本的附件行为仍建议自行验证。
 
-## Contributing
+## 贡献
 
-Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+欢迎提交 Issue 和 Pull Request。开发规范请查看 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-## Security
+## 安全
 
-Please report vulnerabilities privately and avoid posting access tokens in public issues. See [SECURITY.md](SECURITY.md).
+请私下报告安全问题，不要在公开 Issue 中粘贴访问令牌等敏感信息。详情请查看 [SECURITY.md](SECURITY.md)。
 
-## License
+## 许可证
 
-MIT License. See [LICENSE](LICENSE).
+本项目基于 MIT License 开源，详情请查看 [LICENSE](LICENSE)。
