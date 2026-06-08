@@ -37,35 +37,16 @@
   let nextPageToken = "";
   let pendingDeleteMemo: Memo | null = null;
   let deleteDialogOpen = false;
-  let remoteTags: string[] = [];
   let saving = false;
   let savingEditName: string | null = null;
-  let search = "";
-  let selectedTag = "";
   let status = "";
   let vaultPath = "";
   let visibility: MemoVisibility = currentSettings.defaultVisibility;
 
-  $: tags = Array.from(
-    new Set([...remoteTags, ...memos.flatMap((memo) => extractTags(memo))])
-  ).sort((a, b) => a.localeCompare(b));
-
-  $: filteredMemos = memos.filter((memo) => {
-    const query = search.trim().toLowerCase();
-    const matchesSearch = !query || memo.content.toLowerCase().includes(query);
-    const matchesTag = !selectedTag || extractTags(memo).includes(selectedTag);
-
-    return matchesSearch && matchesTag;
-  });
-  $: hasActiveFilters = Boolean(search.trim() || selectedTag || includeArchived);
   $: visibilityItems = VISIBILITY_VALUES.map((value) => ({
     label: visibilityLabels[value],
     value
   }));
-  $: tagItems = [
-    { label: messages.panel.allTags, value: "" },
-    ...tags.map((tag) => ({ label: `#${tag}`, value: tag }))
-  ];
 
   onMount(() => {
     if (hasConnection(currentSettings)) {
@@ -107,18 +88,6 @@
     return Boolean(settings.memosUrl.trim() && settings.accessToken.trim());
   }
 
-  function clearFilters(): void {
-    const shouldRefresh = includeArchived;
-
-    search = "";
-    selectedTag = "";
-    includeArchived = false;
-
-    if (shouldRefresh) {
-      void refresh();
-    }
-  }
-
   async function refresh(): Promise<void> {
     if (!hasConnection(currentSettings)) {
       return;
@@ -130,18 +99,14 @@
 
     try {
       const client = host.getClient();
-      const [memoResult, tagResult] = await Promise.all([
-        client.listMemos({
-          includeArchived,
-          pageSize: currentSettings.pageSize
-        }),
-        client.listTags().catch(() => [])
-      ]);
+      const memoResult = await client.listMemos({
+        includeArchived,
+        pageSize: currentSettings.pageSize
+      });
 
       memos = memoResult.memos;
       commentsByMemoName = {};
       nextPageToken = memoResult.nextPageToken;
-      remoteTags = tagResult;
       status = messages.panel.loaded(memos.length);
       void loadCommentsForMemos(memos);
     } catch (caught) {
@@ -517,23 +482,6 @@
     return memo.rowStatus === "ARCHIVED";
   }
 
-  function extractTags(memo: Memo): string[] {
-    const tags = new Set<string>();
-
-    for (const tag of memo.tags ?? []) {
-      tags.add(tag.replace(/^#/, ""));
-    }
-
-    const tagRegex = /(?:^|\s)#([\p{L}\p{N}_/-]+)/gu;
-    let match: RegExpExecArray | null;
-
-    while ((match = tagRegex.exec(memo.content)) !== null) {
-      tags.add(match[1]);
-    }
-
-    return Array.from(tags).filter(Boolean);
-  }
-
   function getErrorMessage(caught: unknown): string {
     return caught instanceof Error ? caught.message : messages.panel.unexpectedError;
   }
@@ -549,7 +497,19 @@
       return value;
     }
 
-    return date.toLocaleString(localeForLanguage(currentSettings.language));
+    return date.toLocaleDateString(localeForLanguage(currentSettings.language));
+  }
+
+  function visibilityIcon(value: MemoVisibility): string {
+    if (value === "PUBLIC") {
+      return "globe";
+    }
+
+    if (value === "PRIVATE") {
+      return "lock";
+    }
+
+    return "shield";
   }
 
   function resourceLabel(resource: MemoResource): string {
@@ -621,50 +581,6 @@
 </script>
 
 <div class="obwm-panel" on:paste={handlePaste}>
-  <header class="obwm-header">
-    <div class="obwm-brand">
-      <span class="obwm-brand-icon" use:icon={"sticky-note"}></span>
-      <div class="obwm-title-group">
-        <h2>Memos</h2>
-        <span class="obwm-status-pill">
-          <span class:obwm-status-dot-loading={loading} class="obwm-status-dot"></span>
-          {status || messages.panel.ready}
-        </span>
-      </div>
-    </div>
-
-    <div class="obwm-header-actions">
-      <button
-        aria-label={messages.panel.reloadSettings}
-        class="clickable-icon obwm-icon-button"
-        title={messages.panel.reloadSettings}
-        type="button"
-        on:click={() => reloadSettings()}
-      >
-        <span class="obwm-icon" use:icon={"rotate-ccw"}></span>
-      </button>
-      <button
-        aria-label={messages.panel.refresh}
-        class="clickable-icon obwm-icon-button"
-        disabled={!isConfigured || loading}
-        title={messages.panel.refresh}
-        type="button"
-        on:click={refresh}
-      >
-        <span class="obwm-icon" use:icon={"refresh-cw"}></span>
-      </button>
-      <button
-        aria-label={messages.panel.settings}
-        class="clickable-icon obwm-icon-button"
-        title={messages.panel.settings}
-        type="button"
-        on:click={() => host.openSettings()}
-      >
-        <span class="obwm-icon" use:icon={"settings"}></span>
-      </button>
-    </div>
-  </header>
-
   {#if error}
     <div class="obwm-message obwm-message-error">
       <span class="obwm-icon" use:icon={"alert-circle"}></span>
@@ -684,7 +600,7 @@
   {:else}
     <div
       aria-label={messages.panel.memoComposer}
-      class="obwm-composer"
+      class="obwm-composer obwm-main-card"
       role="region"
       on:dragover={handleDragOver}
       on:drop={handleDrop}
@@ -693,7 +609,7 @@
         <div class="obwm-card-heading">
           <div class="obwm-card-title">
             <span class="obwm-icon" use:icon={"pencil"}></span>
-            <span>{messages.panel.memoComposer}</span>
+            <span>{messages.panel.composeCardTitle}</span>
           </div>
         </div>
 
@@ -795,67 +711,52 @@
       </form>
     </div>
 
-    <section class="obwm-list-tools">
-      <div class="obwm-list-tools-row">
-        <div class="obwm-filter-grid">
-          <label class="obwm-search-field">
-            <span class="obwm-icon" use:icon={"search"}></span>
-            <input aria-label={messages.panel.search} bind:value={search} placeholder={messages.panel.search} type="search" />
-          </label>
-
-          <Select.Root type="single" bind:value={selectedTag} items={tagItems}>
-            <Select.Trigger aria-label={messages.panel.allTags} class="obwm-select-trigger obwm-tag-select">
-              <Select.Value />
-              <span class="obwm-icon" use:icon={"chevron-down"}></span>
-            </Select.Trigger>
-            <Select.Portal>
-              <Select.Content class="obwm-select-content" sideOffset={6}>
-                <Select.Viewport>
-                  {#each tagItems as item}
-                    <Select.Item class="obwm-select-item" value={item.value} label={item.label}>
-                      {item.label}
-                    </Select.Item>
-                  {/each}
-                </Select.Viewport>
-              </Select.Content>
-            </Select.Portal>
-          </Select.Root>
+    <section class="obwm-list obwm-main-card">
+      <div class="obwm-card-heading obwm-published-heading">
+        <div class="obwm-card-title">
+          <span class="obwm-icon" use:icon={"list"}></span>
+          <span>{messages.panel.published}</span>
         </div>
 
-        <button
-          class="obwm-button obwm-ghost-button obwm-clear-filters"
-          disabled={!hasActiveFilters || loading}
-          type="button"
-          on:click={clearFilters}
-        >
-          <span class="obwm-icon" use:icon={"eraser"}></span>
-          {messages.panel.clearFilters}
-        </button>
+        <div class="obwm-card-actions">
+          <span class="obwm-status-pill">
+            <span class:obwm-status-dot-loading={loading} class="obwm-status-dot"></span>
+            {status || messages.panel.ready}
+          </span>
+          <button
+            aria-label={messages.panel.refresh}
+            class="clickable-icon obwm-icon-button"
+            disabled={loading}
+            title={messages.panel.refresh}
+            type="button"
+            on:click={refresh}
+          >
+            <span class="obwm-icon" use:icon={"refresh-cw"}></span>
+          </button>
+          <button
+            aria-label={messages.panel.settings}
+            class="clickable-icon obwm-icon-button"
+            title={messages.panel.settings}
+            type="button"
+            on:click={() => host.openSettings()}
+          >
+            <span class="obwm-icon" use:icon={"settings"}></span>
+          </button>
+        </div>
       </div>
 
-      <div class="obwm-filter-footer">
-        <label class="obwm-checkbox">
-          <input bind:checked={includeArchived} type="checkbox" on:change={refresh} />
-          <span>{messages.panel.archived}</span>
-        </label>
-
-        <span class="obwm-filter-count">{filteredMemos.length} / {memos.length}</span>
-      </div>
-    </section>
-
-    <section class="obwm-list">
       {#if loading && memos.length === 0}
         <div class="obwm-message">
           <span class="obwm-icon obwm-spin" use:icon={"loader"}></span>
           <span>{messages.panel.loadingMemos}</span>
         </div>
-      {:else if filteredMemos.length === 0}
+      {:else if memos.length === 0}
         <div class="obwm-message">
-          <span class="obwm-icon" use:icon={"search"}></span>
+          <span class="obwm-icon" use:icon={"inbox"}></span>
           <span>{messages.panel.noMemosFound}</span>
         </div>
       {:else}
-        {#each filteredMemos as memo (memoKey(memo))}
+        {#each memos as memo (memoKey(memo))}
           <article
             class:obwm-archived={isArchived(memo)}
             class="obwm-memo"
@@ -863,7 +764,9 @@
             <div class="obwm-memo-topline">
               <div class="obwm-memo-meta">
                 <span>{formatTime(memo.displayTime || memo.createTime)}</span>
-                <span class="obwm-meta-pill">{visibilityLabels[memo.visibility]}</span>
+                <span class="obwm-visibility-icon" title={visibilityLabels[memo.visibility]} aria-label={visibilityLabels[memo.visibility]}>
+                  <span class="obwm-icon" use:icon={visibilityIcon(memo.visibility)}></span>
+                </span>
                 {#if memo.pinned}
                   <span class="obwm-meta-pill obwm-pinned-pill">
                     <span class="obwm-icon" use:icon={"pin"}></span>

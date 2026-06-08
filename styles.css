@@ -36,6 +36,7 @@
 .obwm-header,
 .obwm-brand,
 .obwm-header-actions,
+.obwm-card-actions,
 .obwm-card-heading,
 .obwm-card-title,
 .obwm-composer-toolbar,
@@ -111,9 +112,13 @@
 }
 
 .obwm-status-pill,
-.obwm-memo-meta,
 .obwm-attachment-meta {
   color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.obwm-memo-meta {
+  color: var(--text-faint);
   font-size: var(--font-ui-smaller);
 }
 
@@ -186,9 +191,7 @@
 
 .obwm-message,
 .obwm-empty,
-.obwm-composer,
-.obwm-list-tools,
-.obwm-memo {
+.obwm-main-card {
   background: var(--obwm-card);
   border: 1px solid var(--obwm-border);
   border-radius: var(--obwm-radius);
@@ -209,9 +212,7 @@
 }
 
 .obwm-empty,
-.obwm-composer,
-.obwm-list-tools,
-.obwm-memo {
+.obwm-main-card {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
@@ -237,6 +238,10 @@
   z-index: 10;
 }
 
+.obwm-main-card {
+  overflow: hidden;
+}
+
 .obwm-composer-form {
   display: flex;
   flex-direction: column;
@@ -251,9 +256,15 @@
 
 .obwm-card-title {
   color: var(--text-normal);
-  font-size: var(--font-ui-small);
+  font-size: var(--font-ui-medium);
   font-weight: 600;
   gap: var(--size-2-2);
+}
+
+.obwm-card-actions {
+  flex: 0 0 auto;
+  gap: var(--size-2-2);
+  min-width: 0;
 }
 
 .obwm-compose-textarea,
@@ -531,24 +542,32 @@
   gap: var(--size-4-2);
   min-height: 0;
   overflow: auto;
-  padding-right: 2px;
+  padding: var(--size-4-3);
+}
+
+.obwm-published-heading {
+  flex: 0 0 auto;
+  gap: var(--size-4-2);
 }
 
 .obwm-memo {
-  padding: var(--size-4-3);
+  border-bottom: 1px solid var(--obwm-border);
+  padding: 0 0 var(--size-4-3);
   position: relative;
   transition:
-    border-color 120ms ease,
-    box-shadow 120ms ease,
-    transform 120ms ease;
+    background-color 120ms ease,
+    color 120ms ease;
   z-index: 0;
+}
+
+.obwm-memo:last-of-type {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 
 .obwm-memo:hover,
 .obwm-memo:focus-within {
-  border-color: var(--obwm-border-hover);
-  box-shadow: var(--obwm-shadow);
-  transform: translateY(-1px);
+  background: transparent;
   z-index: 1;
 }
 
@@ -579,6 +598,18 @@
   line-height: 1.35;
   min-height: 22px;
   padding: 0 8px;
+}
+
+.obwm-visibility-icon {
+  color: var(--text-faint);
+  display: inline-flex;
+  line-height: 1;
+}
+
+.obwm-visibility-icon .obwm-icon,
+.obwm-visibility-icon .obwm-icon svg {
+  height: 13px;
+  width: 13px;
 }
 
 .obwm-pinned-pill {
@@ -841,10 +872,15 @@
   }
 
   .obwm-list-tools-row,
+  .obwm-published-heading,
   .obwm-composer-toolbar,
   .obwm-edit-actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .obwm-card-actions {
+    justify-content: space-between;
   }
 
   .obwm-toolbar-group {
