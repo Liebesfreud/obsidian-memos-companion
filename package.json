@@ -17,7 +17,11 @@
     "type": "git",
     "url": "git+https://github.com/Liebesfreud/obsidian-memos-companion.git"
   },
-  "author": "",
+  "author": "Liebesfreud",
+  "bugs": {
+    "url": "https://github.com/Liebesfreud/obsidian-memos-companion/issues"
+  },
+  "homepage": "https://github.com/Liebesfreud/obsidian-memos-companion#readme",
   "license": "MIT",
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.1.1",

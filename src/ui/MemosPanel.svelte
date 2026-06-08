@@ -90,6 +90,17 @@
     return Boolean(settings.memosUrl.trim() && settings.accessToken.trim());
   }
 
+  function openMemosPage(): void {
+    const url = currentSettings.memosUrl.trim();
+
+    if (!url) {
+      host.openSettings();
+      return;
+    }
+
+    window.open(url, "_blank", "noopener");
+  }
+
   async function refresh(): Promise<void> {
     if (!hasConnection(currentSettings)) {
       return;
@@ -751,6 +762,15 @@
             <span class:obwm-status-dot-loading={loading} class="obwm-status-dot"></span>
             {status || messages.panel.ready}
           </span>
+          <button
+            aria-label={messages.panel.openMemosPage}
+            class="clickable-icon obwm-icon-button"
+            title={messages.panel.openMemosPage}
+            type="button"
+            on:click={openMemosPage}
+          >
+            <span class="obwm-icon" use:icon={"external-link"}></span>
+          </button>
           <button
             aria-label={messages.panel.refresh}
             class="clickable-icon obwm-icon-button"

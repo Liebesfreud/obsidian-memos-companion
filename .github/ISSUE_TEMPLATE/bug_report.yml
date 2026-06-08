@@ -1,0 +1,44 @@
+name: Bug report
+description: Report a reproducible problem
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the exact steps needed to reproduce the issue.
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: input
+    id: obsidian-version
+    attributes:
+      label: Obsidian version
+      placeholder: 1.8.7
+  - type: input
+    id: memos-version
+    attributes:
+      label: Memos version
+      placeholder: v0.x / latest Docker image / commit hash
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Remove access tokens and other sensitive values before posting.

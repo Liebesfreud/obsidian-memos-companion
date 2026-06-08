@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
   "description": "Write and manage self-hosted Memos from an Obsidian sidebar.",
-  "author": "",
-  "authorUrl": "",
+  "author": "Liebesfreud",
+  "authorUrl": "https://github.com/Liebesfreud",
   "isDesktopOnly": true
 }
