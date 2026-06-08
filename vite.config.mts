@@ -5,6 +5,11 @@ import { svelte, vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 export default defineConfig({
   plugins: [
     svelte({
+      compilerOptions: {
+        compatibility: {
+          componentApi: 4
+        }
+      },
       preprocess: vitePreprocess()
     })
   ],

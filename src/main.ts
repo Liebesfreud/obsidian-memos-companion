@@ -1,5 +1,7 @@
 import { App, Notice, Plugin, TFile, WorkspaceLeaf } from "obsidian";
 
+import "./styles.css";
+
 import { getLanguage, getMessages } from "./i18n";
 import { MemosClient } from "./memos-client";
 import { MemosSettingTab } from "./settings";

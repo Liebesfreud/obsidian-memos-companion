@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { AlertDialog, DropdownMenu, Select } from "bits-ui";
   import { Notice, setIcon } from "obsidian";
   import { onMount } from "svelte";
 
@@ -34,7 +35,8 @@
   let loading = false;
   let memos: Memo[] = [];
   let nextPageToken = "";
-  let openActionMenuName: string | null = null;
+  let pendingDeleteMemo: Memo | null = null;
+  let deleteDialogOpen = false;
   let remoteTags: string[] = [];
   let saving = false;
   let savingEditName: string | null = null;
@@ -56,11 +58,16 @@
     return matchesSearch && matchesTag;
   });
   $: hasActiveFilters = Boolean(search.trim() || selectedTag || includeArchived);
+  $: visibilityItems = VISIBILITY_VALUES.map((value) => ({
+    label: visibilityLabels[value],
+    value
+  }));
+  $: tagItems = [
+    { label: messages.panel.allTags, value: "" },
+    ...tags.map((tag) => ({ label: `#${tag}`, value: tag }))
+  ];
 
   onMount(() => {
-    window.addEventListener("click", closeActionMenu);
-    window.addEventListener("keydown", handleWindowKeydown);
-
     if (hasConnection(currentSettings)) {
       void refresh();
     }
@@ -71,8 +78,6 @@
 
     return () => {
       unsubscribeSettings();
-      window.removeEventListener("click", closeActionMenu);
-      window.removeEventListener("keydown", handleWindowKeydown);
     };
   });
 
@@ -100,20 +105,6 @@
 
   function hasConnection(settings: ObWithMemosSettings): boolean {
     return Boolean(settings.memosUrl.trim() && settings.accessToken.trim());
-  }
-
-  function closeActionMenu(): void {
-    openActionMenuName = null;
-  }
-
-  function handleWindowKeydown(event: KeyboardEvent): void {
-    if (event.key === "Escape") {
-      closeActionMenu();
-    }
-  }
-
-  function toggleActionMenu(memo: Memo): void {
-    openActionMenuName = openActionMenuName === memo.name ? null : memo.name;
   }
 
   function clearFilters(): void {
@@ -317,7 +308,6 @@
   }
 
   function startEdit(memo: Memo): void {
-    closeActionMenu();
     editingName = memo.name;
     editContent = memo.content;
     editVisibility = memo.visibility;
@@ -357,12 +347,6 @@
   }
 
   async function deleteMemo(memo: Memo): Promise<void> {
-    closeActionMenu();
-
-    if (!window.confirm(messages.panel.deleteConfirm)) {
-      return;
-    }
-
     busyMemoName = memo.name;
     error = "";
 
@@ -377,8 +361,31 @@
     }
   }
 
+  function requestDeleteMemo(memo: Memo): void {
+    pendingDeleteMemo = memo;
+    deleteDialogOpen = true;
+  }
+
+  async function confirmDeleteMemo(): Promise<void> {
+    if (!pendingDeleteMemo) {
+      return;
+    }
+
+    const memo = pendingDeleteMemo;
+    await deleteMemo(memo);
+    pendingDeleteMemo = null;
+    deleteDialogOpen = false;
+  }
+
+  function handleDeleteDialogOpenChange(open: boolean): void {
+    deleteDialogOpen = open;
+
+    if (!open) {
+      pendingDeleteMemo = null;
+    }
+  }
+
   async function togglePinned(memo: Memo): Promise<void> {
-    closeActionMenu();
     busyMemoName = memo.name;
     error = "";
 
@@ -393,7 +400,6 @@
   }
 
   async function toggleArchived(memo: Memo): Promise<void> {
-    closeActionMenu();
     busyMemoName = memo.name;
     error = "";
 
@@ -414,8 +420,8 @@
     }
   }
 
-  async function deleteMemoFromMenu(memo: Memo): Promise<void> {
-    await deleteMemo(memo);
+  function deleteMemoFromMenu(memo: Memo): void {
+    requestDeleteMemo(memo);
   }
 
   async function toggleArchivedFromMenu(memo: Memo): Promise<void> {
@@ -701,11 +707,28 @@
 
         <div class="obwm-composer-toolbar">
           <div class="obwm-toolbar-group">
-            <select class="obwm-visibility-select" bind:value={visibility} disabled={saving}>
-              {#each VISIBILITY_VALUES as value}
-                <option value={value}>{visibilityLabels[value]}</option>
-              {/each}
-            </select>
+            <Select.Root
+              type="single"
+              bind:value={visibility}
+              disabled={saving}
+              items={visibilityItems}
+            >
+              <Select.Trigger class="obwm-select-trigger obwm-visibility-select">
+                <Select.Value />
+                <span class="obwm-icon" use:icon={"chevron-down"}></span>
+              </Select.Trigger>
+              <Select.Portal>
+                <Select.Content class="obwm-select-content" sideOffset={6}>
+                  <Select.Viewport>
+                    {#each visibilityItems as item}
+                      <Select.Item class="obwm-select-item" value={item.value} label={item.label}>
+                        {item.label}
+                      </Select.Item>
+                    {/each}
+                  </Select.Viewport>
+                </Select.Content>
+              </Select.Portal>
+            </Select.Root>
 
             <button
               class="obwm-button obwm-soft-button"
@@ -780,12 +803,23 @@
             <input aria-label={messages.panel.search} bind:value={search} placeholder={messages.panel.search} type="search" />
           </label>
 
-          <select aria-label={messages.panel.allTags} class="obwm-tag-select" bind:value={selectedTag}>
-            <option value="">{messages.panel.allTags}</option>
-            {#each tags as tag}
-              <option value={tag}>#{tag}</option>
-            {/each}
-          </select>
+          <Select.Root type="single" bind:value={selectedTag} items={tagItems}>
+            <Select.Trigger aria-label={messages.panel.allTags} class="obwm-select-trigger obwm-tag-select">
+              <Select.Value />
+              <span class="obwm-icon" use:icon={"chevron-down"}></span>
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Content class="obwm-select-content" sideOffset={6}>
+                <Select.Viewport>
+                  {#each tagItems as item}
+                    <Select.Item class="obwm-select-item" value={item.value} label={item.label}>
+                      {item.label}
+                    </Select.Item>
+                  {/each}
+                </Select.Viewport>
+              </Select.Content>
+            </Select.Portal>
+          </Select.Root>
         </div>
 
         <button
@@ -824,7 +858,6 @@
         {#each filteredMemos as memo (memoKey(memo))}
           <article
             class:obwm-archived={isArchived(memo)}
-            class:obwm-menu-open={openActionMenuName === memo.name}
             class="obwm-memo"
           >
             <div class="obwm-memo-topline">
@@ -841,63 +874,48 @@
 
               {#if editingName !== memo.name}
                 <div class="obwm-more-menu">
-                  <button
-                    aria-expanded={openActionMenuName === memo.name}
-                    aria-haspopup="menu"
-                    aria-label={messages.panel.moreActions}
-                    class={openActionMenuName === memo.name
-                      ? "clickable-icon obwm-action-button obwm-more-button obwm-more-button-active"
-                      : "clickable-icon obwm-action-button obwm-more-button"}
-                    title={messages.panel.moreActions}
-                    type="button"
-                    on:click|stopPropagation={() => toggleActionMenu(memo)}
-                  >
-                    <span class="obwm-icon" use:icon={"more-horizontal"}></span>
-                  </button>
+                  <DropdownMenu.Root>
+                    <DropdownMenu.Trigger
+                      aria-label={messages.panel.moreActions}
+                      class="clickable-icon obwm-action-button obwm-more-button"
+                      title={messages.panel.moreActions}
+                    >
+                      <span class="obwm-icon" use:icon={"more-horizontal"}></span>
+                    </DropdownMenu.Trigger>
 
-                  {#if openActionMenuName === memo.name}
-                    <div class="obwm-action-menu" role="menu">
-                      <button
-                        class="obwm-menu-item"
-                        role="menuitem"
-                        type="button"
-                        on:click={() => startEditFromMenu(memo)}
-                      >
-                        <span class="obwm-icon" use:icon={"pencil"}></span>
-                        <span>{messages.panel.edit}</span>
-                      </button>
-                      <button
-                        class="obwm-menu-item"
-                        disabled={busyMemoName === memo.name}
-                        role="menuitem"
-                        type="button"
-                        on:click={() => void togglePinnedFromMenu(memo)}
-                      >
-                        <span class="obwm-icon" use:icon={memo.pinned ? "pin-off" : "pin"}></span>
-                        <span>{memo.pinned ? messages.panel.unpin : messages.panel.pin}</span>
-                      </button>
-                      <button
-                        class="obwm-menu-item"
-                        disabled={busyMemoName === memo.name}
-                        role="menuitem"
-                        type="button"
-                        on:click={() => void toggleArchivedFromMenu(memo)}
-                      >
-                        <span class="obwm-icon" use:icon={isArchived(memo) ? "archive-restore" : "archive"}></span>
-                        <span>{isArchived(memo) ? messages.panel.restore : messages.panel.archive}</span>
-                      </button>
-                      <button
-                        class="obwm-menu-item obwm-danger"
-                        disabled={busyMemoName === memo.name}
-                        role="menuitem"
-                        type="button"
-                        on:click={() => void deleteMemoFromMenu(memo)}
-                      >
-                        <span class="obwm-icon" use:icon={"trash-2"}></span>
-                        <span>{messages.panel.delete}</span>
-                      </button>
-                    </div>
-                  {/if}
+                    <DropdownMenu.Portal>
+                      <DropdownMenu.Content class="obwm-action-menu" sideOffset={6} align="end">
+                        <DropdownMenu.Item class="obwm-menu-item" onSelect={() => startEditFromMenu(memo)}>
+                          <span class="obwm-icon" use:icon={"pencil"}></span>
+                          <span>{messages.panel.edit}</span>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item
+                          class="obwm-menu-item"
+                          disabled={busyMemoName === memo.name}
+                          onSelect={() => void togglePinnedFromMenu(memo)}
+                        >
+                          <span class="obwm-icon" use:icon={memo.pinned ? "pin-off" : "pin"}></span>
+                          <span>{memo.pinned ? messages.panel.unpin : messages.panel.pin}</span>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item
+                          class="obwm-menu-item"
+                          disabled={busyMemoName === memo.name}
+                          onSelect={() => void toggleArchivedFromMenu(memo)}
+                        >
+                          <span class="obwm-icon" use:icon={isArchived(memo) ? "archive-restore" : "archive"}></span>
+                          <span>{isArchived(memo) ? messages.panel.restore : messages.panel.archive}</span>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item
+                          class="obwm-menu-item obwm-danger"
+                          disabled={busyMemoName === memo.name}
+                          onSelect={() => deleteMemoFromMenu(memo)}
+                        >
+                          <span class="obwm-icon" use:icon={"trash-2"}></span>
+                          <span>{messages.panel.delete}</span>
+                        </DropdownMenu.Item>
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Portal>
+                  </DropdownMenu.Root>
                 </div>
               {/if}
             </div>
@@ -905,11 +923,23 @@
             {#if editingName === memo.name}
               <textarea bind:value={editContent} class="obwm-edit-textarea" rows="6"></textarea>
               <div class="obwm-edit-actions">
-                <select class="obwm-visibility-select" bind:value={editVisibility}>
-                  {#each VISIBILITY_VALUES as value}
-                    <option value={value}>{visibilityLabels[value]}</option>
-                  {/each}
-                </select>
+                <Select.Root type="single" bind:value={editVisibility} items={visibilityItems}>
+                  <Select.Trigger class="obwm-select-trigger obwm-visibility-select">
+                    <Select.Value />
+                    <span class="obwm-icon" use:icon={"chevron-down"}></span>
+                  </Select.Trigger>
+                  <Select.Portal>
+                    <Select.Content class="obwm-select-content" sideOffset={6}>
+                      <Select.Viewport>
+                        {#each visibilityItems as item}
+                          <Select.Item class="obwm-select-item" value={item.value} label={item.label}>
+                            {item.label}
+                          </Select.Item>
+                        {/each}
+                      </Select.Viewport>
+                    </Select.Content>
+                  </Select.Portal>
+                </Select.Root>
 
                 <button
                   class="mod-cta obwm-submit"
@@ -996,4 +1026,31 @@
       {/if}
     </section>
   {/if}
+
+  <AlertDialog.Root open={deleteDialogOpen} onOpenChange={handleDeleteDialogOpenChange}>
+    <AlertDialog.Portal>
+      <AlertDialog.Overlay class="obwm-dialog-overlay" />
+      <AlertDialog.Content class="obwm-dialog-content">
+        <AlertDialog.Title class="obwm-dialog-title">
+          {messages.panel.deleteConfirm}
+        </AlertDialog.Title>
+        <AlertDialog.Description class="obwm-dialog-description">
+          {pendingDeleteMemo?.content || pendingDeleteMemo?.name || messages.panel.delete}
+        </AlertDialog.Description>
+        <div class="obwm-dialog-actions">
+          <AlertDialog.Cancel class="obwm-button obwm-soft-button" disabled={busyMemoName === pendingDeleteMemo?.name}>
+            {messages.panel.cancel}
+          </AlertDialog.Cancel>
+          <AlertDialog.Action
+            class="obwm-button obwm-danger-button"
+            disabled={busyMemoName === pendingDeleteMemo?.name}
+            on:click={() => void confirmDeleteMemo()}
+          >
+            <span class="obwm-icon" use:icon={"trash-2"}></span>
+            {messages.panel.delete}
+          </AlertDialog.Action>
+        </div>
+      </AlertDialog.Content>
+    </AlertDialog.Portal>
+  </AlertDialog.Root>
 </div>
