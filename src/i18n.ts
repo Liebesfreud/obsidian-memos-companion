@@ -64,6 +64,7 @@ const messages = {
       unpin: "取消置顶",
       uploading: (name: string) => `正在上传 ${name}`,
       vaultAttachmentPath: "仓库附件路径",
+      wordCount: (count: number) => `${count} 字`,
       writeMemo: "写一条 Memo"
     },
     settings: {
@@ -167,6 +168,7 @@ const messages = {
       unpin: "Unpin",
       uploading: (name: string) => `Uploading ${name}`,
       vaultAttachmentPath: "Vault attachment path",
+      wordCount: (count: number) => `${count} chars`,
       writeMemo: "Write a memo"
     },
     settings: {

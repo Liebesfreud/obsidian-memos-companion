@@ -39,10 +39,12 @@
   let deleteDialogOpen = false;
   let saving = false;
   let savingEditName: string | null = null;
+  let showAttachmentTools = false;
   let status = "";
   let vaultPath = "";
   let visibility: MemoVisibility = currentSettings.defaultVisibility;
 
+  $: contentLength = Array.from(content.trim()).length;
   $: visibilityItems = VISIBILITY_VALUES.map((value) => ({
     label: visibilityLabels[value],
     value
@@ -173,6 +175,7 @@
       memos = [memo, ...memos];
       attachments = [];
       content = "";
+      showAttachmentTools = false;
       status = messages.panel.published;
       new Notice(messages.panel.memoPublished);
     } catch (caught) {
@@ -512,6 +515,10 @@
     return "shield";
   }
 
+  function wordCountLabel(count: number): string {
+    return messages.panel.wordCount(count);
+  }
+
   function resourceLabel(resource: MemoResource): string {
     return (
       resource.filename ??
@@ -622,6 +629,8 @@
         ></textarea>
 
         <div class="obwm-composer-toolbar">
+          <span class="obwm-word-count">{wordCountLabel(contentLength)}</span>
+
           <div class="obwm-toolbar-group">
             <Select.Root
               type="single"
@@ -629,15 +638,19 @@
               disabled={saving}
               items={visibilityItems}
             >
-              <Select.Trigger class="obwm-select-trigger obwm-visibility-select">
-                <Select.Value />
-                <span class="obwm-icon" use:icon={"chevron-down"}></span>
+              <Select.Trigger
+                aria-label={visibilityLabels[visibility]}
+                class="clickable-icon obwm-icon-button obwm-toolbar-icon-button"
+                title={visibilityLabels[visibility]}
+              >
+                <span class="obwm-icon" use:icon={visibilityIcon(visibility)}></span>
               </Select.Trigger>
               <Select.Portal>
                 <Select.Content class="obwm-select-content" sideOffset={6}>
                   <Select.Viewport>
                     {#each visibilityItems as item}
                       <Select.Item class="obwm-select-item" value={item.value} label={item.label}>
+                        <span class="obwm-icon" use:icon={visibilityIcon(item.value)}></span>
                         {item.label}
                       </Select.Item>
                     {/each}
@@ -647,13 +660,19 @@
             </Select.Root>
 
             <button
-              class="obwm-button obwm-soft-button"
+              aria-expanded={showAttachmentTools}
+              aria-label={messages.panel.attach}
+              class="clickable-icon obwm-icon-button obwm-toolbar-icon-button"
               disabled={saving}
+              title={messages.panel.attach}
               type="button"
-              on:click={() => fileInput?.click()}
+              on:click={() => (showAttachmentTools = !showAttachmentTools)}
             >
               <span class="obwm-icon" use:icon={"paperclip"}></span>
-              {messages.panel.attach}
+            </button>
+
+            <button class="mod-cta obwm-submit" disabled={saving} type="submit">
+              {saving ? messages.panel.publishing : messages.panel.publish}
             </button>
           </div>
 
@@ -664,26 +683,35 @@
             type="file"
             on:change={handleFilePicker}
           />
-
-          <button class="mod-cta obwm-submit" disabled={saving} type="submit">
-            <span class="obwm-icon" use:icon={"send"}></span>
-            {saving ? messages.panel.publishing : messages.panel.publish}
-          </button>
         </div>
 
-        <div class="obwm-vault-row">
-          <span class="obwm-icon obwm-vault-icon" use:icon={"folder"}></span>
-          <input
-            bind:value={vaultPath}
-            disabled={saving}
-            placeholder={messages.panel.vaultAttachmentPath}
-            type="text"
-            on:keydown={handleVaultKeydown}
-          />
-          <button class="obwm-button obwm-soft-button" disabled={saving || !vaultPath.trim()} type="button" on:click={addVaultAttachment}>
-            {messages.panel.add}
-          </button>
-        </div>
+        {#if showAttachmentTools}
+          <div class="obwm-attachment-tools">
+            <button
+              class="obwm-button obwm-soft-button"
+              disabled={saving}
+              type="button"
+              on:click={() => fileInput?.click()}
+            >
+              <span class="obwm-icon" use:icon={"file-plus"}></span>
+              {messages.panel.attach}
+            </button>
+
+            <div class="obwm-vault-row">
+              <span class="obwm-icon obwm-vault-icon" use:icon={"folder"}></span>
+              <input
+                bind:value={vaultPath}
+                disabled={saving}
+                placeholder={messages.panel.vaultAttachmentPath}
+                type="text"
+                on:keydown={handleVaultKeydown}
+              />
+              <button class="obwm-button obwm-soft-button" disabled={saving || !vaultPath.trim()} type="button" on:click={addVaultAttachment}>
+                {messages.panel.add}
+              </button>
+            </div>
+          </div>
+        {/if}
 
         {#if attachments.length}
           <div class="obwm-attachments">

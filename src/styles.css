@@ -173,6 +173,7 @@
 
 .obwm-icon {
   align-items: center;
+  color: var(--text-faint);
   display: inline-flex;
   flex: 0 0 auto;
   height: 16px;
@@ -310,7 +311,7 @@
 .obwm-edit-actions {
   border-top: 1px solid var(--obwm-border);
   flex-wrap: wrap;
-  gap: var(--size-4-2);
+  gap: var(--size-2-3);
   justify-content: space-between;
   padding-top: var(--size-4-2);
 }
@@ -319,7 +320,30 @@
   flex: 1 1 auto;
   flex-wrap: wrap;
   gap: var(--size-2-3);
+  justify-content: flex-end;
   min-width: 0;
+}
+
+.obwm-word-count {
+  color: var(--text-faint);
+  flex: 0 0 auto;
+  font-size: var(--font-ui-smaller);
+  line-height: 32px;
+}
+
+.obwm-toolbar-icon-button {
+  height: 32px;
+  width: 32px;
+}
+
+.obwm-attachment-tools {
+  background: var(--obwm-muted);
+  border: 1px solid var(--obwm-border);
+  border-radius: var(--obwm-radius);
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2-3);
+  padding: var(--size-2-3);
 }
 
 .obwm-vault-row,
@@ -400,10 +424,13 @@
 }
 
 .obwm-select-item {
+  align-items: center;
   border-radius: var(--obwm-radius-sm);
   color: var(--text-normal);
   cursor: default;
+  display: flex;
   font-size: var(--font-ui-small);
+  gap: var(--size-2-3);
   min-height: 32px;
   padding: 7px 9px;
 }
